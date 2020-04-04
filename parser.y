@@ -4,7 +4,7 @@
 	#include <string.h>
 	#include <assert.h>	
 	#include "SymTable.h"
-	#include "quads.h"	
+	#include "quads.h"
 
 	int yyerror (char* yaccProvidedMessage);
 	int yylex (void);
@@ -15,6 +15,9 @@
 	extern FILE * yyin;
 	extern FILE * yyout;
 	
+	char* krifi;
+	int i=0;
+	int counter=0;
 	int scope=0;
 	int numname=0;
 %}
@@ -121,20 +124,44 @@ stmt:		expr SEMI_COLON {fprintf(yyout," stmt ==> expr ;\n");}
 		;
 
 expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
-		|expr PLUS expr {fprintf(yyout," expr ==> expr + expr \n");}
-		|expr MINUS expr {fprintf(yyout," expr ==> expr - expr \n");}	
-		|expr MULTIPLE expr {fprintf(yyout," expr ==> expr * expr \n");}
-		|expr FORWARD_SLASH expr {fprintf(yyout," expr ==> expr / expr \n");}
-		|expr PERCENT expr {fprintf(yyout," expr ==> expr % expr \n");}
-		|expr GREATER expr {fprintf(yyout," expr ==> expr > expr \n");}
-		|expr GREATER_EQUAL expr {fprintf(yyout," expr ==> expr >= expr \n");}
-		|expr LESS  expr {fprintf(yyout," expr ==> expr < expr \n");}
-		|expr LESS_EQUAL expr {fprintf(yyout," expr ==> expr <= expr \n");}
-		|expr DOUBLE_EQUAL expr {fprintf(yyout," expr ==> expr == expr \n");}
-		|expr NOT_EQUAL expr {fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND expr {fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR expr {fprintf(yyout," expr ==> expr || expr \n");}
-		| term {fprintf(yyout," expr ==> term \n");}
+		|expr PLUS expr 
+		{
+			int i;
+			char* name=(char *)malloc(sizeof(char));
+			char* num=(char *)malloc(sizeof(char));	
+			struct SymTableEntry *tmp,*tmp2;	
+			
+			
+			do{
+				counter++; 
+				sprintf(name, "%s", "_t");
+				sprintf(num, "%d", counter);			
+				strcat(name,num);
+				tmp=NameLookUpInScope(ScopeTable,scope,name);
+				for (i=scope; i>-1;i--){
+					tmp2=NameLookUpInScope(ScopeTable,i,name);
+					if (tmp2!=NULL)
+						break;
+				}
+			}while(!(tmp==NULL && tmp2==NULL));
+			
+			insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1);
+			free(name);
+			free(num);
+		}
+		|expr MINUS expr {counter++; fprintf(yyout," expr ==> expr - expr \n");}	
+		|expr MULTIPLE expr {counter++; fprintf(yyout," expr ==> expr * expr \n");}
+		|expr FORWARD_SLASH expr {counter++; fprintf(yyout," expr ==> expr / expr \n");}
+		|expr PERCENT expr {counter++; fprintf(yyout," expr ==> expr % expr \n");}
+		|expr GREATER expr {counter++; fprintf(yyout," expr ==> expr > expr \n");}
+		|expr GREATER_EQUAL expr {counter++; fprintf(yyout," expr ==> expr >= expr \n");}
+		|expr LESS  expr {counter++; fprintf(yyout," expr ==> expr < expr \n");}
+		|expr LESS_EQUAL expr {counter++; fprintf(yyout," expr ==> expr <= expr \n");}
+		|expr DOUBLE_EQUAL expr {counter++; fprintf(yyout," expr ==> expr == expr \n");}
+		|expr NOT_EQUAL expr {counter++; fprintf(yyout," expr ==> expr != expr \n");}
+		|expr AND expr {counter++; fprintf(yyout," expr ==> expr && expr \n");}
+		|expr OR expr {counter++; fprintf(yyout," expr ==> expr || expr \n");}
+		| term { fprintf(yyout," expr ==> term \n");}
 		;
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
@@ -283,7 +310,8 @@ indexedelem: 	LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET	{fprintf(yy
 		;
 
 block:		LEFT_CURLY_BRACKET {scope++; } stamt RIGHT_CURLY_BRACKET {	Hide(ScopeTable,scope);
-										scope--; 
+										scope--;
+										counter=0;
 										fprintf(yyout," block ==> { [stmt] } \n");}
 		;
 
@@ -297,7 +325,7 @@ funcdef: 	FUNCTION {
 			free(name);
 			free(num);
 			numname++;
-			//scope++;	
+			//scope++;
 		}
 		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {scope--;} block	{fprintf(yyout," funcdef ==> function(){} \n");}
 		|FUNCTION id {
