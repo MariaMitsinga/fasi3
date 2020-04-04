@@ -4,7 +4,8 @@
 	#include <string.h>
 	#include <assert.h>	
 	#include "SymTable.h"
-	
+	#include "quads.h"	
+
 	int yyerror (char* yaccProvidedMessage);
 	int yylex (void);
 	
