@@ -27,6 +27,8 @@ struct SymTableEntry
     char* type;
     unsigned int scope;
     unsigned int line;
+    //unsigned int offset;
+    char* space;
     int isActive; /* gia to hide */
     struct ArgFunction* arg; /* pointer gia ta arguments an to stoixeio einai function alliws einai panta null */
     struct SymTableEntry* nextScopeList; /* pointer gia to scope list opws sthn eikwna tou front */
@@ -93,7 +95,7 @@ struct SymTable* insertNodeToScope(struct SymTable* root,struct SymTableEntry *n
 /* eisagwgh sto Symbol Table
     einai mai aplh eisagwgh se hash table den xreiazetai na pw kati
 */
-struct SymTableEntry* insertNodeToHash(struct SymTable* root,const char* name,char* type,unsigned int scope,unsigned int line,int isActive)
+struct SymTableEntry* insertNodeToHash(struct SymTable* root,const char* name,char* type,unsigned int scope,unsigned int line,char* space,int isActive)
 {
     unsigned int position= SymTable_hash(name);
     struct SymTableEntry *tmp=root->head[position];
@@ -107,6 +109,7 @@ struct SymTableEntry* insertNodeToHash(struct SymTable* root,const char* name,ch
     node->type=strdup(type);
     node->scope=scope;
     node->line=line;
+    node->space=strdup(space);
     node->isActive=isActive;
     node->arg=NULL;
     node->next=NULL;
@@ -229,8 +232,6 @@ int collisionLibFun(struct SymTable* scopeTable,const char* name)
     return 0;
 }
 
-
-
 void printHash(struct SymTable* root)
 {
     struct SymTableEntry* tmp;
@@ -279,7 +280,7 @@ void printScopeTable(struct SymTable* ScopeTable)
         printf("------------ Scope #%d ------------\n",i);
         while(tmp)
         {
-            printf(" \"%s\"  [%s]  (line %d)  (scope %d)\n",tmp->name,tmp->type,tmp->line,tmp->scope);
+            printf(" \"%s\"  [%s] [%s]  (line %d)  (scope %d)\n",tmp->name,tmp->type,tmp->space,tmp->line,tmp->scope);
             tmp=tmp->nextScopeList;
         }
         printf("\n");
