@@ -5,7 +5,7 @@
 	#include <assert.h>	
 	#include "SymTable.h"
 	#include "quads.h"
-
+	
 	int yyerror (char* yaccProvidedMessage);
 	int yylex (void);
 	
@@ -15,11 +15,9 @@
 	extern FILE * yyin;
 	extern FILE * yyout;
 	
-	char* krifi;
-	int i=0;
-	int counter=0;
 	int scope=0;
 	int numname=0;
+	int flag_function=0;
 %}
 
 %start program
@@ -124,44 +122,20 @@ stmt:		expr SEMI_COLON {fprintf(yyout," stmt ==> expr ;\n");}
 		;
 
 expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
-		|expr PLUS expr 
-		{
-			int i;
-			char* name=(char *)malloc(sizeof(char));
-			char* num=(char *)malloc(sizeof(char));	
-			struct SymTableEntry *tmp,*tmp2;	
-			
-			
-			do{
-				counter++; 
-				sprintf(name, "%s", "_t");
-				sprintf(num, "%d", counter);			
-				strcat(name,num);
-				tmp=NameLookUpInScope(ScopeTable,scope,name);
-				for (i=scope; i>-1;i--){
-					tmp2=NameLookUpInScope(ScopeTable,i,name);
-					if (tmp2!=NULL)
-						break;
-				}
-			}while(!(tmp==NULL && tmp2==NULL));
-			
-			insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1);
-			free(name);
-			free(num);
-		}
-		|expr MINUS expr {counter++; fprintf(yyout," expr ==> expr - expr \n");}	
-		|expr MULTIPLE expr {counter++; fprintf(yyout," expr ==> expr * expr \n");}
-		|expr FORWARD_SLASH expr {counter++; fprintf(yyout," expr ==> expr / expr \n");}
-		|expr PERCENT expr {counter++; fprintf(yyout," expr ==> expr % expr \n");}
-		|expr GREATER expr {counter++; fprintf(yyout," expr ==> expr > expr \n");}
-		|expr GREATER_EQUAL expr {counter++; fprintf(yyout," expr ==> expr >= expr \n");}
-		|expr LESS  expr {counter++; fprintf(yyout," expr ==> expr < expr \n");}
-		|expr LESS_EQUAL expr {counter++; fprintf(yyout," expr ==> expr <= expr \n");}
-		|expr DOUBLE_EQUAL expr {counter++; fprintf(yyout," expr ==> expr == expr \n");}
-		|expr NOT_EQUAL expr {counter++; fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND expr {counter++; fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR expr {counter++; fprintf(yyout," expr ==> expr || expr \n");}
-		| term { fprintf(yyout," expr ==> term \n");}
+		|expr PLUS expr {fprintf(yyout," expr ==> expr + expr \n");}
+		|expr MINUS expr {fprintf(yyout," expr ==> expr - expr \n");}	
+		|expr MULTIPLE expr {fprintf(yyout," expr ==> expr * expr \n");}
+		|expr FORWARD_SLASH expr {fprintf(yyout," expr ==> expr / expr \n");}
+		|expr PERCENT expr {fprintf(yyout," expr ==> expr % expr \n");}
+		|expr GREATER expr {fprintf(yyout," expr ==> expr > expr \n");}
+		|expr GREATER_EQUAL expr {fprintf(yyout," expr ==> expr >= expr \n");}
+		|expr LESS  expr {fprintf(yyout," expr ==> expr < expr \n");}
+		|expr LESS_EQUAL expr {fprintf(yyout," expr ==> expr <= expr \n");}
+		|expr DOUBLE_EQUAL expr {fprintf(yyout," expr ==> expr == expr \n");}
+		|expr NOT_EQUAL expr {fprintf(yyout," expr ==> expr != expr \n");}
+		|expr AND expr {fprintf(yyout," expr ==> expr && expr \n");}
+		|expr OR expr {fprintf(yyout," expr ==> expr || expr \n");}
+		| term {fprintf(yyout," expr ==> term \n");}
 		;
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
@@ -234,10 +208,16 @@ lvalue:		id	{
 				}
 				if(i==-1)
 				{
-					if(scope==0)
-						$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,1);
-					else
-						$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,1);
+					if(scope==0 && flag_function==1)
+						$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,"function locals",1);
+					if(scope!=0 && flag_function==1)
+						$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,"function locals",1);
+					if(scope==0 && flag_function==0)
+						$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,"program variables",1);
+					if(scope!=0 && flag_function==0)
+						$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,"program variables",1);
+					//else
+					//	$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,1);
 				}
 			}
 		| LOCAL id	{	
@@ -248,10 +228,19 @@ lvalue:		id	{
 						fprintf(yyout,"\n\nERROR: local %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
 					if(tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
 					{
-						if(scope==0)
+
+						if(scope==0 && flag_function==1)
+							$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,"function locals",1);
+						if(scope!=0 && flag_function==1)
+							$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,"function locals",1);
+						if(scope==0 && flag_function==0)
+							$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,"program variables",1);
+						if(scope!=0 && flag_function==0)
+							$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,"program variables",1);
+						/*if(scope==0)
 							$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,1);
 						else
-							$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,1);
+							$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,1);*/
 
 					}
 
@@ -263,7 +252,7 @@ lvalue:		id	{
 							if(tmp==NULL)
 								printf("\n\nERROR: There is no member on global scope with the name %s in Line %d\n\n", yytext,yylineno);
 						}
-		| member	{fprintf(yyout," Ivalue ==> member \n");}
+		| member	{$$=NULL; fprintf(yyout," Ivalue ==> member \n");}
 		;
 
 member:		lvalue DOT id	{fprintf(yyout," Member ==> .id \n");}
@@ -310,8 +299,7 @@ indexedelem: 	LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET	{fprintf(yy
 		;
 
 block:		LEFT_CURLY_BRACKET {scope++; } stamt RIGHT_CURLY_BRACKET {	Hide(ScopeTable,scope);
-										scope--;
-										counter=0;
+										scope--; 
 										fprintf(yyout," block ==> { [stmt] } \n");}
 		;
 
@@ -321,13 +309,13 @@ funcdef: 	FUNCTION {
 			sprintf(name, "%s", "$f");
 			sprintf(num, "%d", numname);			
 			strcat(name,num);			
-			insertNodeToHash(Head,name,"user function",scope,yylineno,1);
+			insertNodeToHash(Head,name,"user function",scope,yylineno,"",1);
 			free(name);
 			free(num);
 			numname++;
-			//scope++;
+			//scope++;	
 		}
-		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {scope--;} block	{fprintf(yyout," funcdef ==> function(){} \n");}
+		LEFT_PARENTHESES {scope++;flag_function=1;} idlist RIGHT_PARENTHESES {scope--;} block	{flag_function=0;fprintf(yyout," funcdef ==> function(){} \n");}
 		|FUNCTION id {
 				struct SymTableEntry *tmp;
 				tmp=NameLookUpInScope(ScopeTable,scope,yytext);
@@ -336,8 +324,8 @@ funcdef: 	FUNCTION {
 				if(collisionLibFun(ScopeTable,yytext)==1)
 					fprintf(yyout,"\n\nERROR: function %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
 				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
-					insertNodeToHash(Head,yytext,"user function",scope,yylineno,1);
-			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {scope--;} block	{fprintf(yyout," funcdef ==> function id(){} \n");}
+					insertNodeToHash(Head,yytext,"user function",scope,yylineno,"",1);
+			      } LEFT_PARENTHESES {scope++;flag_function=1;} idlist RIGHT_PARENTHESES {scope--;} block	{flag_function=0;fprintf(yyout," funcdef ==> function id(){} \n");}
 		;
 
 const:		NUMBER {fprintf(yyout," const ==> number \n");}
@@ -358,7 +346,7 @@ idlist:		id {
 			if(collisionLibFun(ScopeTable,yytext)==1)
 				fprintf(yyout,"\n\nERROR: function %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
 			else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
-				insertNodeToHash(Head,yytext,"formal argument",scope,yylineno,1);
+				insertNodeToHash(Head,yytext,"formal argument",scope,yylineno,"formal arguments",1);
 			 
 		   } idlist1	{fprintf(yyout, " idlist ==> id,id*;\n");}
 		| /* empty */	{fprintf(yyout, " idlist ==> \n");}
@@ -373,7 +361,7 @@ idlist1:	COMMA id {
 			if(collisionLibFun(ScopeTable,yytext)==1)
 				fprintf(yyout,"\n\nERROR: function %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
 			else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
-				insertNodeToHash(Head,yytext,"formal argument",scope,yylineno,1);
+				insertNodeToHash(Head,yytext,"formal argument",scope,yylineno,"formal arguments",1);
 			 
 		   } idlist1	{fprintf(yyout, " idlist ==> id,id*;\n");}
 		| /* empty */	{fprintf(yyout, " idlist ==>   \n");}
@@ -419,18 +407,18 @@ int main(int argc, char** argv)
 	
 	Head=SymTable_new(509);
 	ScopeTable=SymTable_new(100);
-	insertNodeToHash(Head,"print","library function",0,0,1);
-	insertNodeToHash(Head,"input","library function",0,0,1);
-    	insertNodeToHash(Head,"objectmemberkeys","library function",0,0,1);
-	insertNodeToHash(Head,"objecttotalmembers","library function",0,0,1);
-    	insertNodeToHash(Head,"objectcopy","library function",0,0,1);
-    	insertNodeToHash(Head,"totalarguments","library function",0,0,1);
-	insertNodeToHash(Head,"arguments","library function",0,0,1);
-    	insertNodeToHash(Head,"typeof","library function",0,0,1);
-    	insertNodeToHash(Head,"stronum","library function",0,0,1);
-    	insertNodeToHash(Head,"sqrt","library function",0,0,1);
-    	insertNodeToHash(Head,"cos","library function",0,0,1);
-    	insertNodeToHash(Head,"sin","library function",0,0,1);
+	insertNodeToHash(Head,"print","library function",0,0,"",1);
+	insertNodeToHash(Head,"input","library function",0,0,"",1);
+    	insertNodeToHash(Head,"objectmemberkeys","library function",0,0,"",1);
+	insertNodeToHash(Head,"objecttotalmembers","library function",0,0,"",1);
+    	insertNodeToHash(Head,"objectcopy","library function",0,0,"",1);
+    	insertNodeToHash(Head,"totalarguments","library function",0,0,"",1);
+	insertNodeToHash(Head,"arguments","library function",0,0,"",1);
+    	insertNodeToHash(Head,"typeof","library function",0,0,"",1);
+    	insertNodeToHash(Head,"stronum","library function",0,0,"",1);
+    	insertNodeToHash(Head,"sqrt","library function",0,0,"",1);
+    	insertNodeToHash(Head,"cos","library function",0,0,"",1);
+    	insertNodeToHash(Head,"sin","library function",0,0,"",1);
     	
 	yyparse();
 	printf("\n\n");
