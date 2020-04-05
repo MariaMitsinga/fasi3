@@ -47,7 +47,8 @@ struct quad{
 	unsigned int line;
 };
 
-
+int funcounter=0;
+int *functionoffset; 
 typedef struct quad *temptq;
 temptq *quadtable;
 
@@ -68,4 +69,9 @@ void addtotablequad(){
 	printf("\n%d\n",quadtable[20]->line);
 	printf("\n%d\n",quadtable[70]->line);
 	total++;
+}
+void functionoffsetcreation(){
+	int i=0;
+	functionoffset=(int*)malloc(40 * sizeof(int)); 
+	for(i=0;i<40;i++) functionoffset[i]=0;
 }
