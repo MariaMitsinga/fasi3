@@ -6,3 +6,4 @@
 	-> doulevoun gia polla kai endiamesa blocks, kai gia diaforetika scopes 
 	-> den apothikevo timi mesa tous. Auto prepei na ginei
 	
+2) sto quad.h ekana ton dinamiko pinaka
