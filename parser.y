@@ -112,7 +112,7 @@ stamt:		stmt stamt {fprintf(yyout," stamt ==> stmt stamt\n");}
 		| /* empty*/ {fprintf(yyout,"stamt ==> empty \n");}
 		;
 
-stmt:		expr SEMI_COLON {fprintf(yyout," stmt ==> expr ;\n");}
+stmt:		expr SEMI_COLON {counter=0; fprintf(yyout," stmt ==> expr ;\n");}
 		|ifstmt	{fprintf(yyout," stmt ==> ifstmt ;\n");}
 		|whilestmt {fprintf(yyout," stmt ==> whilestmt ;\n");}
 		|forstmt {fprintf(yyout," stmt ==> forstmt ;\n");}
@@ -125,44 +125,26 @@ stmt:		expr SEMI_COLON {fprintf(yyout," stmt ==> expr ;\n");}
 		;
 
 expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
-		|expr PLUS expr 
-		{/*
-			int i;
-			char* name=(char *)malloc(sizeof(char));
-			char* num=(char *)malloc(sizeof(char));	
-			struct SymTableEntry *tmp,*tmp2;	
-			
-			
-			do{
-				counter++; 
-				sprintf(name, "%s", "_t");
-				sprintf(num, "%d", counter);			
-				strcat(name,num);
-				tmp=NameLookUpInScope(ScopeTable,scope,name);
-				for (i=scope; i>-1;i--){
-					tmp2=NameLookUpInScope(ScopeTable,i,name);
-					if (tmp2!=NULL)
-						break;
-				}
-			}while(!(tmp==NULL && tmp2==NULL));
-			
-			insertNodeToHash(Head,name,"hidden variable",scope,yylineno,-1 ," ",1);
-			free(name);
-			free(num);*/
+		|expr PLUS expr {
+			counter=CreateSecretVar(counter, scope, yylineno);
 			fprintf(yyout," expr ==> expr + expr \n");
 		}
-		|expr MINUS expr {counter++; fprintf(yyout," expr ==> expr - expr \n");}	
-		|expr MULTIPLE expr {counter++; fprintf(yyout," expr ==> expr * expr \n");}
-		|expr FORWARD_SLASH expr {counter++; fprintf(yyout," expr ==> expr / expr \n");}
-		|expr PERCENT expr {counter++; fprintf(yyout," expr ==> expr % expr \n");}
-		|expr GREATER expr {counter++; fprintf(yyout," expr ==> expr > expr \n");}
-		|expr GREATER_EQUAL expr {counter++; fprintf(yyout," expr ==> expr >= expr \n");}
-		|expr LESS  expr {counter++; fprintf(yyout," expr ==> expr < expr \n");}
-		|expr LESS_EQUAL expr {counter++; fprintf(yyout," expr ==> expr <= expr \n");}
-		|expr DOUBLE_EQUAL expr {counter++; fprintf(yyout," expr ==> expr == expr \n");}
-		|expr NOT_EQUAL expr {counter++; fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND expr {counter++; fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR expr {counter++; fprintf(yyout," expr ==> expr || expr \n");}
+		|expr MINUS expr {counter=CreateSecretVar(counter, scope, yylineno);
+			 fprintf(yyout," expr ==> expr - expr \n");}	
+		|expr MULTIPLE expr {counter=CreateSecretVar(counter, scope, yylineno);
+			 fprintf(yyout," expr ==> expr * expr \n");}
+		|expr FORWARD_SLASH expr {counter=CreateSecretVar(counter, scope, yylineno);
+			 fprintf(yyout," expr ==> expr / expr \n");}
+		|expr PERCENT expr {counter=CreateSecretVar(counter, scope, yylineno);
+			 fprintf(yyout," expr ==> expr % expr \n");}
+		|expr GREATER expr { fprintf(yyout," expr ==> expr > expr \n");}
+		|expr GREATER_EQUAL expr { fprintf(yyout," expr ==> expr >= expr \n");}
+		|expr LESS  expr { fprintf(yyout," expr ==> expr < expr \n");}
+		|expr LESS_EQUAL expr { fprintf(yyout," expr ==> expr <= expr \n");}
+		|expr DOUBLE_EQUAL expr { fprintf(yyout," expr ==> expr == expr \n");}
+		|expr NOT_EQUAL expr { fprintf(yyout," expr ==> expr != expr \n");}
+		|expr AND expr { fprintf(yyout," expr ==> expr && expr \n");}
+		|expr OR expr { fprintf(yyout," expr ==> expr || expr \n");}
 		| term { fprintf(yyout," expr ==> term \n");}
 		;
 
@@ -408,8 +390,10 @@ whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
 
-returnstmt:	RETURN SEMI_COLON {fprintf(yyout," returnstmt ==> return ;\n");}
-		| RETURN expr SEMI_COLON {fprintf(yyout," returnstmt ==> return expr;\n");}
+returnstmt:	RETURN SEMI_COLON {counter=CreateSecretVar(counter, scope, yylineno);
+			fprintf(yyout," returnstmt ==> return ;\n");}
+		| RETURN expr SEMI_COLON {counter=CreateSecretVar(counter, scope, yylineno);
+			fprintf(yyout," returnstmt ==> return expr;\n");}
 		;
 
 %%
