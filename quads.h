@@ -77,7 +77,14 @@ void functionoffsetcreation(){
 	for(i=0;i<40;i++) functionoffset[i]=0;
 }
 
-int CreateSecretVar(int counter, int scope, int yylineno){
+struct expr* newexpr(enum expr_t type)
+{
+	struct expr* tmp= (struct expr*)malloc(sizeof(struct expr));
+	tmp->type=type;
+	return tmp;
+}
+
+int CreateSecretVar(int counter, int scope, int yylineno,int funcounter,int functionoffset[],char* space){
 	int i;
 	char* name=(char *)malloc(sizeof(char));
 	char* num=(char *)malloc(sizeof(char));	
@@ -98,8 +105,9 @@ int CreateSecretVar(int counter, int scope, int yylineno){
 	//}while(!(tmp==NULL && tmp2==NULL));
 	//}while(tmp!=NULL);
 	
-	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1,"",1);
+	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,functionoffset[funcounter],space,1);
 	free(name);
 	free(num);
+	functionoffset[funcounter]=functionoffset[funcounter]+1;
 	return counter;
 }
