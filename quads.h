@@ -55,20 +55,27 @@ temptq *quadtable;
 void tablequadcreation(){
 	int i;
 	quadtable =malloc(EXPAND_SIZE * sizeof(temptq));
-	for(i=0;i<40;i++) {
-		quadtable[i]=malloc(sizeof(struct quad));
-		quadtable[i]=NULL;
-	}
+	for(i=0;i<40;i++) quadtable[i]=NULL;
+	quadtable[20]=malloc(sizeof(struct quad));
+	quadtable[20]->line=5;
+	printf("\n%d\n",quadtable[20]->line);
 }
-
-void realloctablequad(){
+void addtotablequad(){
 	int i;
 	quadtable=realloc(quadtable, NEW_SIZE * sizeof(temptq)); 
-	for(i=CURR_SIZE;i<NEW_SIZE;i++){
-		quadtable[i]=malloc(sizeof(struct quad));
-		quadtable[i]=NULL;
-	}
+	for(i=CURR_SIZE;i<NEW_SIZE;i++) quadtable[i]=NULL;
+	quadtable[70]=malloc(sizeof(struct quad));
+	quadtable[70]->line=20;
+	printf("\n%d\n",quadtable[20]->line);
+	printf("\n%d\n",quadtable[70]->line);
 	total++;
+}
+
+struct expr* newexpr(enum expr_t type)
+{
+	struct expr* tmp= (struct expr*)malloc(sizeof(struct expr));
+	tmp->type=type;
+	return tmp;
 }
 
 void functionoffsetcreation(){
@@ -77,7 +84,7 @@ void functionoffsetcreation(){
 	for(i=0;i<40;i++) functionoffset[i]=0;
 }
 
-int CreateSecretVar(int counter, int scope, int yylineno){
+int CreateSecretVar(int counter, int scope, int yylineno,int funcounter,int functionoffset[],char* space){
 	int i;
 	char* name=(char *)malloc(sizeof(char));
 	char* num=(char *)malloc(sizeof(char));	
@@ -98,8 +105,9 @@ int CreateSecretVar(int counter, int scope, int yylineno){
 	//}while(!(tmp==NULL && tmp2==NULL));
 	//}while(tmp!=NULL);
 	
-	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1,"",1);
+	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,functionoffset[funcounter],space,1);
 	free(name);
 	free(num);
+	functionoffset[funcounter]=functionoffset[funcounter]+1;
 	return counter;
 }
