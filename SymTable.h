@@ -27,7 +27,7 @@ struct SymTableEntry
     char* type;
     unsigned int scope;
     unsigned int line;
-    //unsigned int offset;
+    unsigned int offset;
     char* space;
     int isActive; /* gia to hide */
     struct ArgFunction* arg; /* pointer gia ta arguments an to stoixeio einai function alliws einai panta null */
@@ -95,7 +95,8 @@ struct SymTable* insertNodeToScope(struct SymTable* root,struct SymTableEntry *n
 /* eisagwgh sto Symbol Table
     einai mai aplh eisagwgh se hash table den xreiazetai na pw kati
 */
-struct SymTableEntry* insertNodeToHash(struct SymTable* root,const char* name,char* type,unsigned int scope,unsigned int line,char* space,int isActive)
+struct SymTableEntry* insertNodeToHash(struct SymTable* root,const char* name,char* type,unsigned int scope,unsigned int line, unsigned int offset,
+char* space,int isActive)
 {
     unsigned int position= SymTable_hash(name);
     struct SymTableEntry *tmp=root->head[position];
@@ -109,6 +110,7 @@ struct SymTableEntry* insertNodeToHash(struct SymTable* root,const char* name,ch
     node->type=strdup(type);
     node->scope=scope;
     node->line=line;
+    node->offset=offset;
     node->space=strdup(space);
     node->isActive=isActive;
     node->arg=NULL;
@@ -280,7 +282,7 @@ void printScopeTable(struct SymTable* ScopeTable)
         printf("------------ Scope #%d ------------\n",i);
         while(tmp)
         {
-            printf(" \"%s\"  [%s] [%s]  (line %d)  (scope %d)\n",tmp->name,tmp->type,tmp->space,tmp->line,tmp->scope);
+            printf(" \"%s\"  [%s] [%s]  (line %d)  (scope %d) offset=%d \n",tmp->name,tmp->type,tmp->space,tmp->line,tmp->scope,tmp->offset);
             tmp=tmp->nextScopeList;
         }
         printf("\n");
