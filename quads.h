@@ -97,7 +97,7 @@ int CreateSecretVar(int counter, int scope, int yylineno){
 	//}while(!(tmp==NULL && tmp2==NULL));
 	//}while(tmp!=NULL);
 	
-	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1);
+	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1, "", 1);
 	free(name);
 	free(num);
 	return counter;
