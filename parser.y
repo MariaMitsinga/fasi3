@@ -99,9 +99,10 @@
 	int intVal;
 	double dbVal;
 	struct SymTableEntry* tmpnode;
+	struct expr* expr;
 }
 
-%type <tmpnode> lvalue
+%type <expr> lvalue
 
 %%
 
@@ -126,16 +127,19 @@ stmt:		expr SEMI_COLON {counter=0; fprintf(yyout," stmt ==> expr ;\n");}
 
 expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 		|expr PLUS expr {
-			counter=CreateSecretVar(counter, scope, yylineno);
+			if(funcounter>0)
+				{counter=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");}
+			else
+				counter=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			fprintf(yyout," expr ==> expr + expr \n");
 		}
-		|expr MINUS expr {counter=CreateSecretVar(counter, scope, yylineno);
+		|expr MINUS expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			 fprintf(yyout," expr ==> expr - expr \n");}	
-		|expr MULTIPLE expr {counter=CreateSecretVar(counter, scope, yylineno);
+		|expr MULTIPLE expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			 fprintf(yyout," expr ==> expr * expr \n");}
-		|expr FORWARD_SLASH expr {counter=CreateSecretVar(counter, scope, yylineno);
+		|expr FORWARD_SLASH expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			 fprintf(yyout," expr ==> expr / expr \n");}
-		|expr PERCENT expr {counter=CreateSecretVar(counter, scope, yylineno);
+		|expr PERCENT expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			 fprintf(yyout," expr ==> expr % expr \n");}
 		|expr GREATER expr { fprintf(yyout," expr ==> expr > expr \n");}
 		|expr GREATER_EQUAL expr { fprintf(yyout," expr ==> expr >= expr \n");}
@@ -151,29 +155,29 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
 		| MINUS expr %prec UMINUS {fprintf(yyout," term ==> -expr \n");}
 		| NOT expr {fprintf(yyout," term ==> !expr \n");}
-		| DOUBLE_PLUS lvalue 	{ if($2!=NULL){
-					  if(strcmp($2->type,"user function")==0 || strcmp("library function", $2->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->name,yylineno);}
+		| DOUBLE_PLUS lvalue 	{ if($2->sym!=NULL){
+					  if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
+					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);}
 					  fprintf(yyout," term ==> ++lvalue \n");}
-		| lvalue DOUBLE_PLUS	{ if($1!=NULL){
-					  if(strcmp($1->type,"user function")==0 || strcmp("library function", $1->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->name,yylineno);}
+		| lvalue DOUBLE_PLUS	{ if($1->sym!=NULL){
+					  if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
+					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);}
 					  fprintf(yyout," term ==> lvalue++ \n");}
-		| DOUBLE_MINUS lvalue	{ if($2!=NULL){
-					  if(strcmp($2->type,"user function")==0 || strcmp("library function", $2->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->name,yylineno);}
+		| DOUBLE_MINUS lvalue	{ if($2->sym!=NULL){
+					  if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
+					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);}
 					  fprintf(yyout," term ==> --lvalue \n");}
-		| lvalue DOUBLE_MINUS	{ if($1!=NULL){
-					  if(strcmp($1->type,"user function")==0 || strcmp("library function", $1->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->name,yylineno);}
+		| lvalue DOUBLE_MINUS	{ if($1->sym!=NULL){
+					  if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
+					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);}
 					  fprintf(yyout," term ==> lvalue-- \n");}
 		| primary {fprintf(yyout," term ==> primary \n");}
 		;
 
 assgnexpr:	lvalue EQUAL expr {	//fprintf(yyout,"\n\nlvalue:%d\n\n",$1);
-					if($1!=NULL){
-					if(strcmp($1->type,"user function")==0 || strcmp("library function", $1->type)==0)
-					fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned %s in line %d\n\n",$1->name,yylineno);}
+					if($1->sym!=NULL){
+					if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
+					fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned %s in line %d\n\n",$1->sym->name,yylineno);}
 					fprintf(yyout," assgnexpr ==> Ivalue=expr \n");}
 		;
 
@@ -191,7 +195,7 @@ lvalue:		id	{
 				for(i=scope;i>-1;i--)
 				{
 					tmp=NameLookUpInScope(ScopeTable,i,yytext);
-					$$=tmp;
+					$$->sym=tmp;
 					if(tmp!=NULL) //ean brethke kati me idio onoma
 					{	
 						if( ( strcmp("global variable", tmp->type)==0 || strcmp("local variable", tmp->type)==0 || strcmp("formal argument", tmp->type)==0 ) && i!=scope && i!=0)//ean afora metablhth tote psaxnw gia thn lathos periptwsh
@@ -213,37 +217,42 @@ lvalue:		id	{
 									break;
 							}
 						}
+						if(flag==0)
+						{
+							$$=newexpr(var_e);
+							fprintf(yyout,"\n\nenum type: %d\n\n",$$->type);
+						}
 						break;
 					}
 				}
 				if(i==-1){
 					if(scope==0 && funcounter>0)
-						$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
+						$$->sym=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
 					if(scope!=0 && funcounter>0)
-						$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
+						$$->sym=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
 					if(scope==0 && funcounter==0)
-						$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"program variables",1);
+						$$->sym=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"program variables",1);
 					if(scope!=0 && funcounter==0)
-						$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"program variables",1);				
+						$$->sym=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"program variables",1);				
 					functionoffset[funcounter]=functionoffset[funcounter]+1;
 				}
 			}
 		| LOCAL id	{	
 					fprintf(yyout," Ivalue ==> local \n");
 					struct SymTableEntry *tmp=NameLookUpInScope(ScopeTable,scope,yytext);
-					$$=tmp;
+					$$->sym=tmp;
 					if(tmp==NULL && collisionLibFun(ScopeTable,yytext)==1)
 						fprintf(yyout,"\n\nERROR: local %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
 					if(tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
 					{
 						if(scope==0 && funcounter>0)
-							$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
+							$$->sym=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
 						if(scope!=0 && funcounter>0)
-							$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
+							$$->sym=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"function locals",1);
 						if(scope==0 && funcounter==0)
-							$$=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"program variables",1);
+							$$->sym=insertNodeToHash(Head,yytext,"global variable",scope,yylineno,functionoffset[funcounter],"program variables",1);
 						if(scope!=0 && funcounter==0)
-							$$=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"program variables",1);
+							$$->sym=insertNodeToHash(Head,yytext,"local variable",scope,yylineno,functionoffset[funcounter],"program variables",1);
 						functionoffset[funcounter]=functionoffset[funcounter]+1;
 					}
 
@@ -251,11 +260,11 @@ lvalue:		id	{
 		| NAMESPACE_ALIAS_QUALIFIER id	{
 							fprintf(yyout," Ivalue ==> ::id \n");
 							struct SymTableEntry *tmp=NameLookUpInScope(ScopeTable,0,yytext);
-							$$=tmp;
+							$$->sym=tmp;
 							if(tmp==NULL)
 								printf("\n\nERROR: There is no member on global scope with the name %s in Line %d\n\n", yytext,yylineno);
 						}
-		| member	{fprintf(yyout," Ivalue ==> member \n");}
+		| member	{$$->sym=NULL;fprintf(yyout," Ivalue ==> member \n");}
 		;
 
 member:		lvalue DOT id	{fprintf(yyout," Member ==> .id \n");}
@@ -390,9 +399,9 @@ whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
 
-returnstmt:	RETURN SEMI_COLON {counter=CreateSecretVar(counter, scope, yylineno);
+returnstmt:	RETURN SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
 			fprintf(yyout," returnstmt ==> return ;\n");}
-		| RETURN expr SEMI_COLON {counter=CreateSecretVar(counter, scope, yylineno);
+		| RETURN expr SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
 			fprintf(yyout," returnstmt ==> return expr;\n");}
 		;
 
