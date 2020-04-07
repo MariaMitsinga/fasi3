@@ -75,3 +75,30 @@ void functionoffsetcreation(){
 	functionoffset=(int*)malloc(40 * sizeof(int)); 
 	for(i=0;i<40;i++) functionoffset[i]=0;
 }
+
+int CreateSecretVar(int counter, int scope, int yylineno){
+	int i;
+	char* name=(char *)malloc(sizeof(char));
+	char* num=(char *)malloc(sizeof(char));	
+	struct SymTableEntry *tmp,*tmp2;	
+			
+	//do{
+		
+		sprintf(name, "%s", "_t");
+		sprintf(num, "%d", counter);			
+		strcat(name,num);
+		counter++; 
+		//tmp=NameLookUpInScope(ScopeTable,scope,name);
+		//for (i=scope; i>-1;i--){
+			//tmp2=NameLookUpInScope(ScopeTable,i,name);
+			//if (tmp2!=NULL)
+				//break;
+		//}
+	//}while(!(tmp==NULL && tmp2==NULL));
+	//}while(tmp!=NULL);
+	
+	insertNodeToHash(Head,name,"hidden variable",scope,yylineno,1);
+	free(name);
+	free(num);
+	return counter;
+}
