@@ -27,7 +27,7 @@
 
 
 %token	id
-%token	NUMBER
+%token	<intVal> NUMBER
 %token	FLOAT		
 %token	STRING			
 %token	NEWLINE
@@ -103,6 +103,7 @@
 }
 
 %type <expr> lvalue
+%type <expr> const
 
 %%
 
@@ -222,6 +223,7 @@ lvalue:		id	{
 							$$=newexpr(var_e);
 							fprintf(yyout,"\n\nenum type: %d\n\n",$$->type);
 						}
+						$$->sym=tmp;
 						break;
 					}
 				}
@@ -347,7 +349,11 @@ funcdef: 	FUNCTION {
 															fprintf(yyout," funcdef ==> function id(){} \n");}
 		;
 
-const:		NUMBER {fprintf(yyout," const ==> number \n");}
+const:		NUMBER {
+			 $$ = newexpr(costnum_e);
+			 $$->numConst= $1;
+			 fprintf(yyout," numConst:%d \n\n",$$->numConst);
+			 fprintf(yyout," const ==> number \n");}
 		| STRING {fprintf(yyout," const ==> string \n");}
 		| NIL {fprintf(yyout," const ==> nil \n");}
 		| TRUE {fprintf(yyout," const ==> true \n");}
