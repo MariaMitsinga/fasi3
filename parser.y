@@ -194,6 +194,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst > $3->numConst;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_greater,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr > expr \n");}
@@ -205,6 +209,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst >= $3->numConst;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_greatereq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr >= expr \n");}
@@ -216,6 +224,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst < $3->numConst;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_less,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr < expr \n");}
@@ -227,6 +239,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst <= $3->numConst;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_lesseq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr <= expr \n");}
@@ -241,10 +257,15 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->numConst=1;
 			}
 			else $$->numConst=0;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
+			//printf("APANTISI if %.0f\n", $$->numConst);
 			addtofunctionoffset(tablecounter,if_eq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr == expr \n");}
-		|expr NOT_EQUAL expr { 
+		|expr NOT_EQUAL expr {
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -255,10 +276,15 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->numConst=1;
 			}
 			else $$->numConst=0;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
+			printf("APANTISI if %.0f\n", $$->numConst);
 			addtofunctionoffset(tablecounter,if_noteq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND expr { 
+		|expr AND expr {
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -266,10 +292,14 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst && $3->numConst;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,and,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR expr { 
+		|expr OR expr {
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -277,6 +307,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst || $3->numConst;
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,or,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr || expr \n");}
@@ -285,7 +319,21 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
 		| MINUS expr %prec UMINUS {fprintf(yyout," term ==> -expr \n");}
-		| NOT expr {fprintf(yyout," term ==> !expr \n");}
+		| NOT expr {
+			$$=newexpr(boolexpr_e);
+			if(funcounter>0){
+				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+			}else{
+				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+			}
+			$$->numConst= !($2->numConst);
+			if ($$->numConst==1){
+				$$->boolConst = '1';
+			}
+			else $$->boolConst = '0';
+			addtofunctionoffset(tablecounter,not,$$,$1,$3,-1,yylineno);
+			tablecounter++;
+			fprintf(yyout," term ==> !expr \n");}
 		| DOUBLE_PLUS lvalue 	{ if($2->sym!=NULL){
 					  if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
 					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);}
