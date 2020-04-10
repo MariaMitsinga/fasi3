@@ -1,6 +1,7 @@
 #define HASH_MULTIPLIER 65599
 #define SIZE 509
 int perv_step=0;
+int counter=0;
 int step=100;
 /* Return a hash code for name. */
 static unsigned int SymTable_hash(const char *name)
