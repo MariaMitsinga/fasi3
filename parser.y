@@ -3,20 +3,19 @@
 	#include <stdlib.h>
 	#include <string.h>
 	#include <assert.h>
-	int counter=0;	
 	#include "SymTable.h"
 	#include "quads.h"
 
 	int yyerror (char* yaccProvidedMessage);
 	int yylex (void);
 	
+	extern counter;
 	extern int yylineno;
 	extern char * yyval;
 	extern char * yytext;
 	extern FILE * yyin;
 	extern FILE * yyout;
 	
-	//int counter=0;
 	char* krifi;
 	int i=0;
 	int scope=0;
@@ -140,7 +139,7 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 			}else{
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
-			counter++;
+			//counter++;
 			$$->numConst=$1->numConst + $3->numConst;
 			addtofunctionoffset(tablecounter,add,$$,$1,$3,-1,yylineno);
 			tablecounter++;
