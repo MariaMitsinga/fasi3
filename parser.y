@@ -21,6 +21,7 @@
 	int scope=0;
 	int numname=0;
 	int offset_arg=0;
+	int infunction=0;
 %}
 
 %start program
@@ -116,13 +117,13 @@ stamt:		stmt stamt {fprintf(yyout," stamt ==> stmt stamt\n");}
 		| /* empty*/ {fprintf(yyout,"stamt ==> empty \n");}
 		;
 
-stmt:		expr SEMI_COLON {counter=0; fprintf(yyout," stmt ==> expr ;\n");}
-		|ifstmt	{fprintf(yyout," stmt ==> ifstmt ;\n");}
-		|whilestmt {fprintf(yyout," stmt ==> whilestmt ;\n");}
-		|forstmt {fprintf(yyout," stmt ==> forstmt ;\n");}
-		|returnstmt {fprintf(yyout," stmt ==> returnstmt ;\n");}
+stmt:		expr SEMI_COLON {counter=0; fprintf(yyout," stmt ==> expr; \n");}
+		|ifstmt	{fprintf(yyout," stmt ==> ifstmt \n");}
+		|whilestmt {fprintf(yyout," stmt ==> whilestmt \n");}
+		|forstmt {fprintf(yyout," stmt ==> forstmt \n");}
+		|returnstmt {fprintf(yyout," stmt ==> returnstmt \n");}
 		|BREAK SEMI_COLON {fprintf(yyout," stmt ==> break; \n");}
-		|CONTINUE SEMI_COLON {fprintf(yyout," stmt ==> break; \n");}
+		|CONTINUE SEMI_COLON {fprintf(yyout," stmt ==> continue; \n");}
 		|block {fprintf(yyout," stmt ==> {} \n");}
 		|funcdef {fprintf(yyout," stmt ==> funcdef \n");}
 		|SEMI_COLON {fprintf(yyout," stmt ==> ; \n");}
@@ -194,10 +195,6 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst > $3->numConst;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_greater,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr > expr \n");}
@@ -209,10 +206,6 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst >= $3->numConst;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_greatereq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr >= expr \n");}
@@ -224,10 +217,6 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst < $3->numConst;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_less,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr < expr \n");}
@@ -239,10 +228,6 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst <= $3->numConst;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,if_lesseq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr <= expr \n");}
@@ -257,15 +242,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->numConst=1;
 			}
 			else $$->numConst=0;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
-			//printf("APANTISI if %.0f\n", $$->numConst);
 			addtofunctionoffset(tablecounter,if_eq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr == expr \n");}
-		|expr NOT_EQUAL expr {
+		|expr NOT_EQUAL expr { 
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -276,15 +256,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->numConst=1;
 			}
 			else $$->numConst=0;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
-			printf("APANTISI if %.0f\n", $$->numConst);
 			addtofunctionoffset(tablecounter,if_noteq,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND expr {
+		|expr AND expr { 
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -292,14 +267,10 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst && $3->numConst;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,and,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR expr {
+		|expr OR expr { 
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -307,10 +278,6 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
 			$$->numConst=$1->numConst || $3->numConst;
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
 			addtofunctionoffset(tablecounter,or,$$,$1,$3,-1,yylineno);
 			tablecounter++;
 			fprintf(yyout," expr ==> expr || expr \n");}
@@ -319,36 +286,82 @@ expr:		assgnexpr {fprintf(yyout," expr ==> assgnexpr \n");}
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
 		| MINUS expr %prec UMINUS {fprintf(yyout," term ==> -expr \n");}
-		| NOT expr {
-			$$=newexpr(boolexpr_e);
-			if(funcounter>0){
-				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
-			}else{
-				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
-			}
-			$$->numConst= !($2->numConst);
-			if ($$->numConst==1){
-				$$->boolConst = '1';
-			}
-			else $$->boolConst = '0';
-			addtofunctionoffset(tablecounter,not,$$,$1,$3,-1,yylineno);
-			tablecounter++;
-			fprintf(yyout," term ==> !expr \n");}
+		| NOT expr {fprintf(yyout," term ==> !expr \n");}
 		| DOUBLE_PLUS lvalue 	{ if($2->sym!=NULL){
-					  if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);}
+						struct expr* tmp,*num;
+						tmp=newexpr(arithexpr_e);
+						if(funcounter>0){
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
+						//tmp->numConst=$2->numConst; prepei na alaxtei ama xreiazonantai kai oi times
+						addtofunctionoffset(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
+						tablecounter++;
+						num=newexpr(arithexpr_e);
+						num->numConst=1;
+						addtofunctionoffset(tablecounter,add,$2,$2,num,-1,yylineno);
+						tablecounter++;
+					  	if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
+					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
+						}
 					  fprintf(yyout," term ==> ++lvalue \n");}
 		| lvalue DOUBLE_PLUS	{ if($1->sym!=NULL){
-					  if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);}
+						struct expr* tmp,*num;
+						tmp=newexpr(arithexpr_e);
+						if(funcounter>0){
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
+						//tmp->numConst=$1->numConst; prepei na alaxtei ama xreiazonantai kai oi times
+						addtofunctionoffset(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
+						tablecounter++;
+						num=newexpr(arithexpr_e);
+						num->numConst=1;
+						addtofunctionoffset(tablecounter,add,$1,$1,num,-1,yylineno);
+						tablecounter++;
+					  	if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
+					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
+						}
 					  fprintf(yyout," term ==> lvalue++ \n");}
 		| DOUBLE_MINUS lvalue	{ if($2->sym!=NULL){
-					  if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);}
+						struct expr* tmp,*num;
+						tmp=newexpr(arithexpr_e);
+						if(funcounter>0){
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
+						//tmp->numConst=$2->numConst; prepei na alaxtei ama xreiazonantai kai oi times
+						addtofunctionoffset(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
+						tablecounter++;
+						num=newexpr(arithexpr_e);
+						num->numConst=1;
+						addtofunctionoffset(tablecounter,sub,$2,$2,num,-1,yylineno);
+						tablecounter++;
+					  	if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
+					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
+						}
 					  fprintf(yyout," term ==> --lvalue \n");}
 		| lvalue DOUBLE_MINUS	{ if($1->sym!=NULL){
-					  if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
-					  fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);}
+						struct expr* tmp,*num;
+						tmp=newexpr(arithexpr_e);
+						if(funcounter>0){
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
+						//tmp->numConst=$1->numConst; prepei na alaxtei ama xreiazonantai kai oi times
+						addtofunctionoffset(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
+						tablecounter++;
+						num=newexpr(arithexpr_e);
+						num->numConst=1;
+						addtofunctionoffset(tablecounter,sub,$1,$1,num,-1,yylineno);
+						tablecounter++;
+					  	if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
+					 		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
+						}
 					  fprintf(yyout," term ==> lvalue-- \n");}
 		| primary {fprintf(yyout," term ==> primary \n");}
 		;
@@ -400,7 +413,6 @@ lvalue:		id	{
 						if(flag==0)
 						{
 							$$=newexpr(var_e);
-							fprintf(yyout,"\n\nenum type: %d\n\n",$$->type);
 						}
 						$$->sym=tmp;
 						break;
@@ -421,6 +433,7 @@ lvalue:		id	{
 		| LOCAL id	{	
 					fprintf(yyout," Ivalue ==> local \n");
 					struct SymTableEntry *tmp=NameLookUpInScope(ScopeTable,scope,yytext);
+					$$=newexpr(var_e);
 					$$->sym=tmp;
 					if(tmp==NULL && collisionLibFun(ScopeTable,yytext)==1)
 						fprintf(yyout,"\n\nERROR: local %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
@@ -441,6 +454,7 @@ lvalue:		id	{
 		| NAMESPACE_ALIAS_QUALIFIER id	{
 							fprintf(yyout," Ivalue ==> ::id \n");
 							struct SymTableEntry *tmp=NameLookUpInScope(ScopeTable,0,yytext);
+							$$=newexpr(var_e);
 							$$->sym=tmp;
 							if(tmp==NULL)
 								printf("\n\nERROR: There is no member on global scope with the name %s in Line %d\n\n", yytext,yylineno);
@@ -510,9 +524,11 @@ funcdef: 	FUNCTION {
 			numname++;
 			//scope++;
 		}
-		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--;} block	{ functionoffset[funcounter]=0; 
+		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block { functionoffset[funcounter]=0; 
 													funcounter--; 
-													fprintf(yyout," funcdef ==> function(){} \n");}
+													infunction--;
+													fprintf(yyout," funcdef ==> function(){} \n");
+													}
 		|FUNCTION id {
 				struct SymTableEntry *tmp;
 				tmp=NameLookUpInScope(ScopeTable,scope,yytext);
@@ -523,12 +539,14 @@ funcdef: 	FUNCTION {
 				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
 					insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
 				funcounter++;
-			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--;} block	{functionoffset[funcounter]=0; 
+			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block {functionoffset[funcounter]=0; 
 															funcounter--; 
-															fprintf(yyout," funcdef ==> function id(){} \n");}
+															infunction--;
+															fprintf(yyout," funcdef ==> function id(){} \n");
+															}
 		;
 
-const:		NUMBER {$$=newexpr(constnum_e); $$->numConst=$1; printf("\n%d\n",$$->numConst); fprintf(yyout," const ==> number \n");}
+const:		NUMBER {$$=newexpr(constnum_e); $$->numConst=$1; fprintf(yyout," const ==> number \n");}
 		| STRING {fprintf(yyout," const ==> string \n");}
 		| NIL {fprintf(yyout," const ==> nil \n");}
 		| TRUE {fprintf(yyout," const ==> true \n");}
