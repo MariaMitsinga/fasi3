@@ -1,5 +1,6 @@
 int total=1;
 int tablecounter=0;
+extern counter;
 #define EXPAND_SIZE 40
 #define CURR_SIZE (total*EXPAND_SIZE)
 #define NEW_SIZE (EXPAND_SIZE + CURR_SIZE)
@@ -141,13 +142,13 @@ struct expr* newexpr(enum expr_t type)
 	return tmp;
 }
 
-struct SymTableEntry * CreateSecretVar(int counter, int scope, int yylineno,int funcounter,int functionoffset[],char* space){
+struct SymTableEntry * CreateSecretVar(int coun, int scope, int yylineno,int funcounter,int functionoffset[],char* space){
 	int i;
 	char* name=(char *)malloc(sizeof(char));
 	char* num=(char *)malloc(sizeof(char));	
 	struct SymTableEntry *tmp,*tmp2;		
 	sprintf(name, "%s", "_t");
-	sprintf(num, "%d", counter);			
+	sprintf(num, "%d", coun);			
 	strcat(name,num);
 	counter++; 
 	
