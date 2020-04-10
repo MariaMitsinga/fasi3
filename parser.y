@@ -2,7 +2,8 @@
 	#include <stdio.h>
 	#include <stdlib.h>
 	#include <string.h>
-	#include <assert.h>	
+	#include <assert.h>
+	int counter=0;	
 	#include "SymTable.h"
 	#include "quads.h"
 
@@ -15,7 +16,7 @@
 	extern FILE * yyin;
 	extern FILE * yyout;
 	
-	int counter=0;
+	//int counter=0;
 	char* krifi;
 	int i=0;
 	int scope=0;
@@ -27,7 +28,7 @@
 %start program
 
 
-%token	id
+%token	<strVal> id
 %token  <intVal> NUMBER 
 %token	FLOAT		
 %token	STRING			
@@ -107,6 +108,8 @@
 %type <expr> const
 %type <expr> expr
 %type <expr> primary
+%type <expr> member
+%type <expr> assgnexpr
 
 %%
 
@@ -366,15 +369,34 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) 
 		| primary {fprintf(yyout," term ==> primary \n");}
 		;
 
-assgnexpr:	lvalue EQUAL expr {	addtofunctionoffset(tablecounter,assign,$1,$3,NULL,-1,yylineno);
-					tablecounter++;
+assgnexpr:	lvalue EQUAL expr {	
+					if(strcmp(getExpr_t($1->type),"tableitem_e")==0)
+					{
+						emit(tablesetelem,$1->index,$3,$1,-1,yylineno);
+						//$$=emit_iftableitem($$)
+						if(funcounter>0)
+							$$=emit_iftableitem($$,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+						else
+							$$=emit_iftableitem($$,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+						$$->type=assignexpr_e;
+					}
+					else{
+						addtofunctionoffset(tablecounter,assign,$1,$3,NULL,-1,yylineno);
+						tablecounter++;}
 					if($1->sym!=NULL){
 					if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
 					fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned %s in line %d\n\n",$1->sym->name,yylineno);}
 					fprintf(yyout," assgnexpr ==> Ivalue=expr \n");
 		};
 
-primary:  	lvalue	{fprintf(yyout," primary ==> Ivalue \n");}
+primary:  	lvalue	{
+				//fprintf(yyout," $1->name:%s \n",$1->sym->name);
+				if(funcounter>0)
+					$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+				else
+					$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+				fprintf(yyout," $$->name:%s \n",$$->sym->name);
+				fprintf(yyout," primary ==> Ivalue \n");}
 		| call {fprintf(yyout," primary ==> call \n");}
 		| objectdef {fprintf(yyout," primary ==> objectdef \n");}
 		| LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {fprintf(yyout," primary ==> (funcdef) \n");}
@@ -459,11 +481,23 @@ lvalue:		id	{
 							if(tmp==NULL)
 								printf("\n\nERROR: There is no member on global scope with the name %s in Line %d\n\n", yytext,yylineno);
 						}
-		| member	{$$->sym=NULL;fprintf(yyout," Ivalue ==> member \n");}
+		| member	{$$=$1;fprintf(yyout," Ivalue ==> member \n");}
 		;
 
-member:		lvalue DOT id	{fprintf(yyout," Member ==> .id \n");}
-		| lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET	{fprintf(yyout," Member ==> [expr] \n");}
+member:		lvalue DOT id	{
+					//printf("$3=%s\n$1=%s\n",$3,$1->sym->name);
+					if(funcounter>0)
+						$$=member_item($1,$3,counter, scope, yylineno,funcounter,functionoffset,"function locals");
+					else
+						$$=member_item($1,$3,counter, scope, yylineno,funcounter,functionoffset,"program variables");
+					//fprintf(yyout,"pointer $$ : %d \n",$$);
+					fprintf(yyout," Member ==> lvalue.id \n");}
+		| lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET	{
+										if(funcounter>0)
+											$$=member_item($1,$3->sym->name, counter, scope, yylineno,funcounter,functionoffset,"function locals");
+										else
+											$$=member_item($1, $3->sym->name, counter, scope, yylineno,funcounter,functionoffset,"program variables");
+										fprintf(yyout," Member ==> [expr] \n");}
 		| call DOT id	{fprintf(yyout," Member ==> call.id \n");}
 		| call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {fprintf(yyout," Member ==> call[expr] \n");}
 		;
@@ -644,8 +678,11 @@ int main(int argc, char** argv)
     	insertNodeToHash(Head,"sin","library function",0,0,0,"",1);
 	
 	yyparse();
-	printfunstionoffset();
+	//printfunstionoffset();
 	printf("\n\n");
 	printScopeTable(ScopeTable);
+	printf("\n\n");
+	//printf("\nop: %d, arg1:%s\n",quadtable[0]->op,quadtable[0]->arg1->sym->name);
+	printQuad();
 	return 0;
 }
