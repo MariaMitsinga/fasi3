@@ -54,37 +54,6 @@ int *functionoffset;
 typedef struct quad *temptq;
 temptq *quadtable;
 
-void tablequadcreation(){
-	int i;
-	quadtable =malloc(EXPAND_SIZE * sizeof(temptq));
-	for(i=0;i<40;i++) {
-		quadtable[i]=NULL;	
-	}
-}
-
-void domalloc(int size){
-	quadtable[size]=malloc(sizeof(struct quad));
-}
-
-void addtofunctionoffset(int size,enum iopcode op,struct expr* result,struct expr* arg1,struct expr* arg2,unsigned int label,unsigned int line){
-	quadtable[size]=malloc(sizeof(struct quad));
-	quadtable[size]->op=op;
-	quadtable[size]->result=result;
-	quadtable[size]->arg1=arg1;
-	quadtable[size]->arg2=arg2;
-	quadtable[size]->label=label;
-	quadtable[size]->line=line;
-}
-
-void realloctablequad(){
-	int i;
-	quadtable=realloc(quadtable, NEW_SIZE * sizeof(temptq)); 
-	for(i=CURR_SIZE;i<NEW_SIZE;i++){
-		quadtable[i]=NULL;
-	}
-	total++;
-}
-
 const char* getiopcode(enum iopcode op){
 	switch (op){
       		case assign:		return "assign";
@@ -116,6 +85,56 @@ const char* getiopcode(enum iopcode op){
    	}
 }
 
+
+const char* getExpr_t(enum expr_t type){
+	switch (type){
+      		case var_e:			return "var_e";
+		case tableitem_e: 		return "tableitem_e";
+		case programfunc_e: 		return "programfunc_e";
+		case libraryfunc_e: 		return "libraryfunc_e";
+		case arithexpr_e: 		return "arithexpr_e";
+		case boolexpr_e: 		return "boolexpr_e";
+		case assignexpr_e: 		return "assignexpr_e";
+		case newtable_e: 		return "newtable_e";
+		case constnum_e: 		return "constnum_e"; 
+		case constbool_e: 		return "constbool_e";
+		case conststring_e: 		return "conststring_e";
+		case nil_e: 			return "nil_e";
+   	}
+}
+
+
+
+void tablequadcreation(){
+	int i;
+	quadtable =malloc(EXPAND_SIZE * sizeof(temptq));
+	for(i=0;i<40;i++) {
+		quadtable[i]=NULL;	
+	}
+}
+
+void domalloc(int size){
+	quadtable[size]=malloc(sizeof(struct quad));
+}
+
+void addquad(int size,enum iopcode op,struct expr* result,struct expr* arg1,struct expr* arg2,unsigned int label,unsigned int line){
+	quadtable[size]=malloc(sizeof(struct quad));
+	quadtable[size]->op=op;
+	quadtable[size]->result=result;
+	quadtable[size]->arg1=arg1;
+	quadtable[size]->arg2=arg2;
+	quadtable[size]->label=label;
+	quadtable[size]->line=line;
+}
+
+void realloctablequad(){
+	int i;
+	quadtable=realloc(quadtable, NEW_SIZE * sizeof(temptq)); 
+	for(i=CURR_SIZE;i<NEW_SIZE;i++){
+		quadtable[i]=NULL;
+	}
+	total++;
+}
 
 void printfunstionoffset(){
 	int i=0;
@@ -222,22 +241,6 @@ struct expr * member_item(struct expr * lv,const char*name,int counter, int scop
 	return ti;
 }
 
-const char* getExpr_t(enum expr_t type){
-	switch (type){
-      		case var_e:			return "var_e";
-		case tableitem_e: 		return "tableitem_e";
-		case programfunc_e: 		return "programfunc_e";
-		case libraryfunc_e: 		return "libraryfunc_e";
-		case arithexpr_e: 		return "arithexpr_e";
-		case boolexpr_e: 		return "boolexpr_e";
-		case assignexpr_e: 		return "assignexpr_e";
-		case newtable_e: 		return "newtable_e";
-		case constnum_e: 		return "constnum_e"; 
-		case constbool_e: 		return "constbool_e";
-		case conststring_e: 		return "conststring_e";
-		case nil_e: 			return "nil_e";
-   	}
-}
 
 void printQuad()
 {
@@ -255,28 +258,30 @@ void printQuad()
 				break;
 			case add:
 				//printf("op: %s\n",getExpr_t(quadtable[i]->arg1->type));
-				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
-				{	
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %.0f\t %.0f\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
 				}
-				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
-				{	
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %s\t %.0f\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
 				}
-				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
-				{	
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %.0f\t %s\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
 				}
-				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
-				{	
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				}
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
+					printf("%d:\t %s \t\t %s\t\t %s\t %.0f\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
 				}
 				break;
 			case tablesetelem:
 				printf("%d:\t %s \t %s \t\t \"%s\" \t %s \n",i,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->result->index->strConst,quadtable[i]->arg2->sym->name);
 				break;
 			case assign:
-				printf("%d:\t %s \t %s \t\t %s \n",i,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->arg1->sym==NULL)
+					printf("%d:\t %s \t %s \t\t %d \n",i,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
+				else	
+					printf("%d:\t %s \t %s \t\t %s \n",i,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
 				break;
 			default:
 				printf("the end\n");
