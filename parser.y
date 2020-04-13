@@ -104,11 +104,16 @@
 }
 
 %type <expr> lvalue
+%type <expr> member
+%type <expr> primary
+%type <expr> assgnexpr
+%type <expr> call
+%type <expr> term
+%type <expr> objectdef
 %type <expr> const
 %type <expr> expr
-%type <expr> primary
-%type <expr> member
-%type <expr> assgnexpr
+%type <expr> elist
+%type <expr> elist1
 
 %%
 
@@ -382,6 +387,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) 
 
 assgnexpr:	lvalue EQUAL expr {	
 					if($1->type==tableitem_e){
+						
 						emit(tablesetelem,$1->index,$3,$1,-1,yylineno);
 						//$$=emit_iftableitem($$)
 						if(funcounter>0)
@@ -394,6 +400,7 @@ assgnexpr:	lvalue EQUAL expr {
 						$$=$1;
 						tablecounter++;
 					}
+					
 					if($1->sym!=NULL){
 					if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
 					fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned %s in line %d\n\n",$1->sym->name,yylineno);}
@@ -537,15 +544,49 @@ normcall:	LEFT_PARENTHESES elist RIGHT_PARENTHESES {fprintf(yyout," normcall ==>
 methodcall:	DOUBLE_DOT id LEFT_PARENTHESES elist RIGHT_PARENTHESES {fprintf(yyout," methodcall ==> ..id(elist) \n");}
 		;
 
-elist:	 	expr elist1	{fprintf(yyout," elist ==> expr elist1 \n");}
+elist:	 	expr elist1	{
+					if($2==NULL)
+					{
+						$1->next=$2;
+						$$=$1;
+					}
+					else
+					{
+						$1->next=$2;
+						$$=$1;
+					}			
+					fprintf(yyout," elist ==> expr elist1 \n");}
 		| /* empty */	{fprintf(yyout," elist ==>  \n");}
 		;
 
-elist1:		COMMA expr elist1	{fprintf(yyout," elist ==> , expr elist1 \n");}
-		| /* empty */	{fprintf(yyout," elist ==>  \n");}
+elist1:		COMMA expr elist1{
+					$2->next=$3;
+					$$=$2;
+					fprintf(yyout," elist ==> ,expr elist1 \n");}
+		| /* empty */	{$$=NULL;fprintf(yyout," elist1 ==>  \n");}
 		;
 
-objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{fprintf(yyout," objectdef ==> [elist] \n");}
+objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
+									int i=0;
+									struct expr* t=newexpr(newtable_e);
+									struct expr* tmp=$2;
+									//printf("object: %s\n",tmp->sym->name);
+									//printf("pointer: %d\n",tmp->next);
+									//printf("next pointer: %d\n",tmp->next->next);
+									t->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+									addquad(tablecounter,tablecreate,NULL,t,NULL,-1,yylineno);
+									tablecounter++;
+									while(tmp!=NULL)
+									{
+										printf("auto... %d\n",tmp);
+										addquad(tablecounter,tablesetelem,t,newexpr_constnum(i),tmp,-1,yylineno);
+										tablecounter++;
+										//printf("object... %s\n",tmp->sym->name);
+										tmp=tmp->next;
+										i++;
+									}
+									$$=t;
+									fprintf(yyout," objectdef ==> [elist] \n");}
 		| LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {fprintf(yyout," objectdef ==> [indexed] \n");}
 		;
 
