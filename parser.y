@@ -26,7 +26,11 @@
 
 %start program
 
-
+%token	<strVal> STRING
+%token	<uncharVal> FALSE
+%token	<uncharVal> TRUE
+%token	<strVal> NIL
+%token	<dbVal> FLOAT
 %token	<strVal> id
 %token  <intVal> NUMBER 
 %token	FLOAT		
@@ -642,11 +646,11 @@ funcdef: 	FUNCTION {
 		;
 
 const:		NUMBER {$$=newexpr(constnum_e); $$->numConst=$1; fprintf(yyout," const ==> number \n");}
-		| STRING {fprintf(yyout," const ==> string \n");}
-		| NIL {fprintf(yyout," const ==> nil \n");}
-		| TRUE {fprintf(yyout," const ==> true \n");}
-		| FALSE {fprintf(yyout," const ==> false \n");}
-		| FLOAT {fprintf(yyout," const ==> float \n");}
+		| STRING {$$=newexpr(conststring_e); $$->strConst=$1; fprintf(yyout," const ==> string \n");}
+		| NIL {$$=newexpr(nil_e); $$->strConst=yytext; fprintf(yyout," const ==> nil \n");}
+		| TRUE {$$=newexpr(constbool_e); $$->numConst=1.0; $$->boolConst='1'; fprintf(yyout," const ==> true \n");}
+		| FALSE {$$=newexpr(constbool_e); $$->numConst=0.0; $$->boolConst='0'; fprintf(yyout," const ==> false \n");}
+		| FLOAT {$$=newexpr(constnum_e); $$->numConst=$1; fprintf(yyout," const ==> float \n");}
 		;
 
 idlist:		id {
