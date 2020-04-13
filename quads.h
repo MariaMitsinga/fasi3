@@ -123,6 +123,9 @@ void addquad(int size,enum iopcode op,struct expr* result,struct expr* arg1,stru
 	quadtable[size]->result=result;
 	quadtable[size]->arg1=arg1;
 	quadtable[size]->arg2=arg2;
+	if(arg2!=NULL)printf("from arg2....%s\n",arg2->sym->name);
+	if(quadtable[size]->arg2!=NULL)printf("from quadtable[size]->arg2....%s\n",quadtable[size]->arg2->sym->name);
+	printf("from addquad...size=%d\n",size);
 	quadtable[size]->label=label;
 	quadtable[size]->line=line;
 }
@@ -158,6 +161,8 @@ struct expr* newexpr(enum expr_t type)
 {
 	struct expr* tmp= (struct expr*)malloc(sizeof(struct expr));
 	tmp->type=type;
+	tmp->next=NULL;
+	tmp->strConst=NULL;
 	return tmp;
 }
 
@@ -222,6 +227,14 @@ struct expr* emit_iftableitem(struct expr* e,int counter, int scope, int yylinen
 }
 
 
+struct expr * newexpr_constnum(double i)
+{
+	struct expr *e = newexpr(constnum_e);
+	e->numConst = i;
+	//printf("from quad:%s\n",e->strConst);
+	return e;	
+}
+
 struct expr * newexpr_conststring(const char* s)
 {
 	struct expr *e = newexpr(conststring_e);
@@ -246,7 +259,7 @@ void printQuad()
 {
 	int i=0;
 	printf("quad# \t opcode \t result \t arg1 \t arg2 \t label\n");
-	printf("--------------------------------------------------------------------------------------\n");
+	printf("----------------------------------------------------------------------------\n");
 	for(i=0;i<40;i++)
 	{
 		if(quadtable[i]==NULL)
@@ -254,34 +267,44 @@ void printQuad()
 		switch(quadtable[i]->op)
 		{	
 			case tablegetelem:
-				printf("%d:\t %s \t %s \t\t %s \t \"%s\" \n",i,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg1->index->strConst);
+				printf("%d:\t %s \t %s \t\t %s \t \"%s\" \n",i+1,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg1->index->strConst);
 				break;
 			case add:
 				//printf("op: %s\n",getExpr_t(quadtable[i]->arg1->type));
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
-					printf("%d:\t %s \t\t %s\t\t %.0f\t %.0f\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+					printf("%d:\t %s \t\t %s\t\t %.0f\t %.0f\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
 				}
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
-					printf("%d:\t %s \t\t %s\t\t %s\t %.0f\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+					printf("%d:\t %s \t\t %s\t\t %s\t %.0f\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
 				}
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 ){	
-					printf("%d:\t %s \t\t %s\t\t %.0f\t %s\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+					printf("%d:\t %s \t\t %s\t\t %.0f\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
 				}
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 ){	
-					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
 				}
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
-					printf("%d:\t %s \t\t %s\t\t %s\t %.0f\n",i,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+					printf("%d:\t %s \t\t %s\t\t %s\t %.0f\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
 				}
 				break;
 			case tablesetelem:
-				printf("%d:\t %s \t %s \t\t \"%s\" \t %s \n",i,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->result->index->strConst,quadtable[i]->arg2->sym->name);
+				if(quadtable[i]->result->index==NULL)
+				{	
+					//printf("lalala....%d\n",i);
+					printf("%d:\t %s\t %s \t\t %.0f\t%s \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+					
+				}
+				else	
+					printf("%d:\t %s \t %s \t\t \"%s\" \t %s \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->result->index->strConst,quadtable[i]->arg2->sym->name);
 				break;
 			case assign:
 				if(quadtable[i]->arg1->sym==NULL)
-					printf("%d:\t %s \t %s \t\t %d \n",i,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
+					printf("%d:\t %s \t %s \t\t %d \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
 				else	
-					printf("%d:\t %s \t %s \t\t %s \n",i,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
+					printf("%d:\t %s \t %s \t\t %s \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
+				break;
+			case tablecreate:
+				printf("%d:\t %s \t   %s \n",i+1,"tablecreate",quadtable[i]->arg1->sym->name);
 				break;
 			default:
 				printf("the end\n");
