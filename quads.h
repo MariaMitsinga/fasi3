@@ -306,6 +306,19 @@ void printQuad()
 			case tablecreate:
 				printf("%d:\t %s \t   %s \n",i+1,"tablecreate",quadtable[i]->arg1->sym->name);
 				break;
+			case funcstart:
+				printf("%d:\t %s \t %s \n",i,"funcstart",quadtable[i]->result->sym->name);	
+				break;
+			case funcend:				
+				printf("%d:\t %s \t %s \n",i,"funcend",quadtable[i]->result->sym->name);
+				break;
+			case Return:
+				if(quadtable[i]->result!=NULL)
+					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
+				else 
+					printf("%d:\t %s \n",i,"return");
+				break;
+
 			default:
 				printf("the end\n");
 		}

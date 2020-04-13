@@ -22,6 +22,7 @@
 	int numname=0;
 	int offset_arg=0;
 	int infunction=0;
+	struct expr* fun;
 %}
 
 %start program
@@ -32,9 +33,7 @@
 %token	<strVal> NIL
 %token	<dbVal> FLOAT
 %token	<strVal> id
-%token  <intVal> NUMBER 
-%token	FLOAT		
-%token	STRING			
+%token  <intVal> NUMBER 		
 %token	NEWLINE
 %token	NEWTAB
 %token	IF              
@@ -48,10 +47,7 @@
 %token	AND     
 %token	NOT             
 %token	OR          
-%token	LOCAL      
-%token	TRUE       
-%token	FALSE         
-%token	NIL         
+%token	LOCAL                        
 %token 	SPACE
 %token	EQUAL
 %token	PLUS		
@@ -615,17 +611,22 @@ funcdef: 	FUNCTION {
 		 	char* num=(char *)malloc(sizeof(char));
 			sprintf(name, "%s", "$f");
 			sprintf(num, "%d", numname);			
-			strcat(name,num);			
+			strcat(name,num);	
+			fun=newexpr(programfunc_e);		
+			fun->sym=insertNodeToHash(Head,name,"user function",scope,yylineno, -1,"",1);
 			insertNodeToHash(Head,name,"user function",scope,yylineno, -1,"",1);
 			funcounter++;
 			free(name);
 			free(num);
 			numname++;
-			//scope++;
+			addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
+			tablecounter++;
 		}
 		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block { functionoffset[funcounter]=0; 
 													funcounter--; 
 													infunction--;
+													addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
+													tablecounter++;
 													fprintf(yyout," funcdef ==> function(){} \n");
 													}
 		|FUNCTION id {
@@ -635,12 +636,18 @@ funcdef: 	FUNCTION {
 					fprintf(yyout,"\n\nERROR: name %s already exists in same scope in line %d\n\n",yytext,yylineno);
 				if(collisionLibFun(ScopeTable,yytext)==1)
 					fprintf(yyout,"\n\nERROR: function %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
-				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
-					insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
+				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0){		
+					fun=newexpr(programfunc_e);
+					fun->sym=insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
+					addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
+					tablecounter++;
+				}
 				funcounter++;
 			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block {functionoffset[funcounter]=0; 
 															funcounter--; 
 															infunction--;
+															addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
+															tablecounter++;
 															fprintf(yyout," funcdef ==> function id(){} \n");
 															}
 		;
@@ -695,10 +702,16 @@ whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
 
-returnstmt:	RETURN SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
-			fprintf(yyout," returnstmt ==> return ;\n");}
-		| RETURN expr SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
-			fprintf(yyout," returnstmt ==> return expr;\n");}
+returnstmt:	RETURN SEMI_COLON {	if(funcounter==1){
+						addquad(tablecounter,Return,NULL,NULL,NULL,-1,yylineno);
+						tablecounter++;
+					}
+					fprintf(yyout," returnstmt ==> return ;\n");}
+		| RETURN expr SEMI_COLON {	if(funcounter==1){
+							addquad(tablecounter,Return,$2,NULL,NULL,-1,yylineno);
+					 		tablecounter++;
+						}
+						fprintf(yyout," returnstmt ==> return expr;\n");}
 		;
 
 %%
