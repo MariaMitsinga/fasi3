@@ -313,12 +313,13 @@ void printQuad()
 				printf("%d:\t %s \t %s \n",i,"funcend",quadtable[i]->result->sym->name);
 				break;
 			case Return:
-				if(quadtable[i]->result!=NULL)
-					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
-				else 
+				if(quadtable[i]->result==NULL)
 					printf("%d:\t %s \n",i,"return");
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf("%d:\t %s \t %.0f \n",i,"return",quadtable[i]->result->numConst);
+				else
+					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
 				break;
-
 			default:
 				printf("the end\n");
 		}
