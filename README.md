@@ -2,7 +2,7 @@
 ## KAI KATHE FORA DIAVAZETE TO NA EIMASTE OLES UP TO DATE			##
 
 1) Krifes metavlites:
-	-> to ekana gia to expr PLUS expr, xriazetai na ginei kai sta ipolipa
+	-> to ekana gia to expr PLUS expr, xriazetai na ginei kai sta ipolipa 
 	-> doulevoun gia polla kai endiamesa blocks, kai gia diaforetika scopes 
 	-> counter sostos, meta apo kathe klisi prepei na kanete counter++; (maria)
 	
@@ -17,3 +17,4 @@
 4) ekana to const (true false nil number float string)
 	->dilosa tokens kai ta etreksa
 	->gia true false apothikeusa timi kais to numConst kai sto boolConst (maria)
+5) etoimo to return kai ta funcstart and funcend quads gia to function
