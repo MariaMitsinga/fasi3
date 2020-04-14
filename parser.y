@@ -22,10 +22,10 @@
 	int numname=0;
 	int offset_arg=0;
 	int infunction=0;
-	struct expr* fun;
 %}
 
 %start program
+
 
 %token	<strVal> STRING
 %token	<uncharVal> FALSE
@@ -33,7 +33,7 @@
 %token	<strVal> NIL
 %token	<dbVal> FLOAT
 %token	<strVal> id
-%token  <intVal> NUMBER 		
+%token  <intVal> NUMBER			
 %token	NEWLINE
 %token	NEWTAB
 %token	IF              
@@ -95,9 +95,9 @@
 
 
 %union
-{	
-	unsigned char uncharVal;
+{
 	char* strVal;
+	unsigned char uncharVal;
 	int intVal;
 	double dbVal;
 	struct SymTableEntry* tmpnode;
@@ -115,6 +115,9 @@
 %type <expr> expr
 %type <expr> elist
 %type <expr> elist1
+%type <expr> indexedelem
+%type <expr> indexed
+%type <expr> indexed1
 
 %%
 
@@ -305,7 +308,18 @@ expr:		assgnexpr {
 		;
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
-		| MINUS expr %prec UMINUS {fprintf(yyout," term ==> -expr \n");}
+		| MINUS expr %prec UMINUS {
+						
+						$$=newexpr(arithexpr_e);
+						if(funcounter>0){
+							$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
+						addquad(tablecounter,uminus,$$,$2,NULL,-1,yylineno);
+						tablecounter++;
+						
+						fprintf(yyout," term ==> -expr \n");}
 		| NOT expr {fprintf(yyout," term ==> !expr \n");}
 		| DOUBLE_PLUS lvalue 	{ if($2->sym!=NULL){
 						struct expr* tmp,*num;
@@ -414,7 +428,7 @@ primary:  	lvalue	{
 					$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"function locals");
 				else
 					$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
-				fprintf(yyout," $$->name:%s \n",$$->sym->name);
+				//fprintf(yyout," $$->name:%s \n",$$->sym->name);
 				fprintf(yyout," primary ==> Ivalue \n");}
 		| call {fprintf(yyout," primary ==> call \n");}
 		| objectdef {fprintf(yyout," primary ==> objectdef \n");}
@@ -571,7 +585,7 @@ objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 									int i=0;
 									struct expr* t=newexpr(newtable_e);
 									struct expr* tmp=$2;
-									//printf("object: %s\n",tmp->sym->name);
+									printf("LALALALA\n");
 									//printf("pointer: %d\n",tmp->next);
 									//printf("next pointer: %d\n",tmp->next->next);
 									t->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -579,7 +593,7 @@ objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 									tablecounter++;
 									while(tmp!=NULL)
 									{
-										printf("auto... %d\n",tmp);
+										//printf("auto... %d\n",tmp);
 										addquad(tablecounter,tablesetelem,t,newexpr_constnum(i),tmp,-1,yylineno);
 										tablecounter++;
 										//printf("object... %s\n",tmp->sym->name);
@@ -588,17 +602,44 @@ objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 									}
 									$$=t;
 									fprintf(yyout," objectdef ==> [elist] \n");}
-		| LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {fprintf(yyout," objectdef ==> [indexed] \n");}
+		| LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
+									struct expr* tmp=$2;
+									struct expr* t=newexpr(newtable_e);
+									t->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+									addquad(tablecounter,tablecreate,NULL,t,NULL,-1,yylineno);
+									tablecounter++;
+									while(tmp!=NULL)
+									{
+										//printf("index:%.0f, value:%.0f\n",tmp->index->numConst,tmp->numConst);
+										addquad(tablecounter,tablesetelem,t,tmp->index,tmp,-1,yylineno);
+										tablecounter++;
+										tmp=tmp->next;
+									}
+									$$=t;
+									fprintf(yyout," objectdef ==> [indexed] \n");}
 		;
 
-indexed:	indexedelem indexed1	{fprintf(yyout," indexed ==> indexedelem indexed1 \n");}
+indexed:	indexedelem indexed1	{$1->next=$2;$$=$1;fprintf(yyout," indexed ==> indexedelem indexed1 \n");}
 		;
 
-indexed1: 	COMMA indexedelem indexed1	{fprintf(yyout," indexed ==> indexedelem indexed1 \n");}
-		| /* empty */	{fprintf(yyout," indexed ==>   \n");}
+indexed1: 	COMMA indexedelem indexed1{	$2->next=$3;
+						$$=$2;
+						fprintf(yyout," indexed ==> indexedelem indexed1 \n");}
+		| /* empty */	{$$=NULL;fprintf(yyout," indexed ==>   \n");}
 		;
 
-indexedelem: 	LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET	{fprintf(yyout," indexedelem ==> { expr : expr } \n");}
+indexedelem: 	LEFT_CURLY_BRACKET expr COLON expr RIGHT_CURLY_BRACKET{ $$=$4;
+									$$->index=$2; 
+									/*if(expr->type==constnum_e)
+										$$->index->numConst=$4->numConst;
+									if(expr->type==conststring_e)
+										$$->index->strConst=$4->strConst;
+									if(expr->type==constbool_e)
+										$$->index->boolConst=$4->boolConst;
+									else
+										$$->index->sym=$4->sym;
+									*/
+									fprintf(yyout," indexedelem ==> { expr : expr } \n");}
 		;
 
 block:		LEFT_CURLY_BRACKET {scope++; } stamt RIGHT_CURLY_BRACKET {	Hide(ScopeTable,scope);
@@ -612,22 +653,17 @@ funcdef: 	FUNCTION {
 		 	char* num=(char *)malloc(sizeof(char));
 			sprintf(name, "%s", "$f");
 			sprintf(num, "%d", numname);			
-			strcat(name,num);	
-			fun=newexpr(programfunc_e);		
-			fun->sym=insertNodeToHash(Head,name,"user function",scope,yylineno, -1,"",1);
+			strcat(name,num);			
 			insertNodeToHash(Head,name,"user function",scope,yylineno, -1,"",1);
 			funcounter++;
 			free(name);
 			free(num);
 			numname++;
-			addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
-			tablecounter++;
+			//scope++;
 		}
 		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block { functionoffset[funcounter]=0; 
 													funcounter--; 
 													infunction--;
-													addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
-													tablecounter++;
 													fprintf(yyout," funcdef ==> function(){} \n");
 													}
 		|FUNCTION id {
@@ -637,18 +673,12 @@ funcdef: 	FUNCTION {
 					fprintf(yyout,"\n\nERROR: name %s already exists in same scope in line %d\n\n",yytext,yylineno);
 				if(collisionLibFun(ScopeTable,yytext)==1)
 					fprintf(yyout,"\n\nERROR: function %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
-				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0){		
-					fun=newexpr(programfunc_e);
-					fun->sym=insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
-					addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
-					tablecounter++;
-				}
+				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
+					insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
 				funcounter++;
 			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block {functionoffset[funcounter]=0; 
 															funcounter--; 
 															infunction--;
-															addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
-															tablecounter++;
 															fprintf(yyout," funcdef ==> function id(){} \n");
 															}
 		;
@@ -703,16 +733,10 @@ whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
 
-returnstmt:	RETURN SEMI_COLON {	if(funcounter==1){
-						addquad(tablecounter,Return,NULL,NULL,NULL,-1,yylineno);
-						tablecounter++;
-					}
-					fprintf(yyout," returnstmt ==> return ;\n");}
-		| RETURN expr SEMI_COLON {	if(funcounter==1){
-							addquad(tablecounter,Return,$2,NULL,NULL,-1,yylineno);
-					 		tablecounter++;
-						}
-						fprintf(yyout," returnstmt ==> return expr;\n");}
+returnstmt:	RETURN SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
+			fprintf(yyout," returnstmt ==> return ;\n");}
+		| RETURN expr SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
+			fprintf(yyout," returnstmt ==> return expr;\n");}
 		;
 
 %%
