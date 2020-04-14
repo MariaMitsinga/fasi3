@@ -299,7 +299,9 @@ void printQuad()
 					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
 				}
 				break;
-			case sub:	
+			case sub:
+				
+				//printf("op: %s\n",getExpr_t(quadtable[i]->arg1->type));
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
 				}
@@ -321,8 +323,10 @@ void printQuad()
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"arithexpr_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
 				}
-				break;		
-			case mul:	
+				break;
+			case mul:
+				
+				//printf("op: %s\n",getExpr_t(quadtable[i]->arg1->type));
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 ){	
 					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
 				}
