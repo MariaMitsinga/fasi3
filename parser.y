@@ -95,7 +95,8 @@
 
 
 %union
-{
+{	
+	unsigned char uncharVal;
 	char* strVal;
 	int intVal;
 	double dbVal;
