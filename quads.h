@@ -296,18 +296,15 @@ struct expr* make_call(int size,int count, int scope,int line, int funcounter,
 	struct expr* func = emit_iftableitem(lv,count,scope,line,funcounter,functionoffset,space);
 	struct expr* curr=elista;
 	while(curr!=NULL){
-		addquad(size, param,result, elista,NULL,-1, line);
-		size++;
+		addquad(tablecounter, param,NULL, curr,NULL,-1, line);
 		curr=curr->next;
 	}
-	addquad(size, call,NULL, func, NULL, -1, line);
-	size++;
-	addquad(size, param,result, elista,NULL,-1, line);
+	addquad(tablecounter, call,NULL, func, NULL, -1, line);
 	result->sym=CreateSecretVar(count, scope, line, funcounter,functionoffset, space);
-	addquad(size, getretval,result, NULL,NULL,-1, line);
-	size++;
+	addquad(tablecounter, getretval,result, NULL,NULL,-1, line);
 	return result;
 }
+
 
 struct expr * member_item(struct expr * lv,const char*name,int counter, int scope, int yylineno,int funcounter,int functionoffset[],char* space)
 {
@@ -485,7 +482,26 @@ void printQuad()
 				else
 					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
 				break;
-
+			case param:
+				printf("%d:\t %s ",i+1,"param");
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+						printf("\t\t\t\t %g \n",quadtable[i]->arg1->numConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+						printf("\t\t\t\t \"%s\"\n",quadtable[i]->arg1->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+						if(quadtable[i]->arg1->boolConst=='1')
+							printf("\t\t\t\t 'true' \n");
+						else
+							printf("\t\t\t\t 'false' \n");
+					}else
+						printf("\t\t\t\t %s \n",quadtable[i]->arg1->sym->name);
+				break;
+			case call:
+				printf("%d:\t %s \t\t\t\t %s \n",i+1,"call",quadtable[i]->arg1->sym->name);
+				break;
+			case getretval:
+				printf("%d:\t %s \t %s \n",i+1,"getretval",quadtable[i]->result->sym->name);
+				break;
 			default:
 				printf("the end\n");
 		}
