@@ -22,6 +22,7 @@
 	int numname=0;
 	int offset_arg=0;
 	int infunction=0;
+	int flag_Array=0;
 %}
 
 %start program
@@ -122,6 +123,7 @@
 
 %type <strVal> funcname
 %type <expr> funprefix
+%type <expr> funcdef
 
 %type <call> callsuffix
 %type <call> normcall
@@ -157,7 +159,9 @@ expr:		assgnexpr {
 			}
 			counter++;
 			$$->numConst=$1->numConst;
-			addquad(tablecounter,assign,$$,$1,NULL,-1,yylineno);
+			if(flag_Array==0)
+				addquad(tablecounter,assign,$$,$1,NULL,-1,yylineno);
+			flag_Array=1;
 			fprintf(yyout," expr ==> assgnexpr \n");
 		}
 		|expr PLUS expr {
@@ -396,6 +400,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 
 assgnexpr:	lvalue EQUAL expr {	
 					if($1->type==tableitem_e){
+						flag_Array=1;
 						fprintf(yyout," bhke sto ==\n");
 						emit(tablesetelem,$1->index,$3,$1,-1,yylineno);
 						//$$=emit_iftableitem($$)
@@ -425,10 +430,10 @@ primary:  	lvalue	{
 					$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 				//fprintf(yyout," $$->name:%s \n",$$->sym->name);
 				fprintf(yyout," primary ==> Ivalue \n");}
-		| call {fprintf(yyout," primary ==> call \n");}
-		| objectdef {fprintf(yyout," primary ==> objectdef \n");}
-		| LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {fprintf(yyout," primary ==> (funcdef) \n");}
-		| const {fprintf(yyout," primary ==> const \n");}
+		| call {$$=$1;fprintf(yyout," primary ==> call \n");}
+		| objectdef {$$=$1;fprintf(yyout," primary ==> objectdef \n");}
+		| LEFT_PARENTHESES funcdef RIGHT_PARENTHESES {$$=$2;fprintf(yyout," primary ==> (funcdef) \n");}
+		| const {$$=$1;fprintf(yyout," primary ==> const \n");}
 	 	;
 
 lvalue:		id	{
@@ -539,27 +544,55 @@ member:		lvalue DOT id	{
 		| call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {fprintf(yyout," Member ==> call[expr] \n");}
 		;
 
-call:		call LEFT_PARENTHESES elist RIGHT_PARENTHESES	{//$$=make_call($$,$3);
-								fprintf(yyout," CALL ==> call(elist) \n");}
-		| lvalue callsuffix	{fprintf(yyout," call ==> ivalue callsuffix \n");} 
+call:		call LEFT_PARENTHESES elist RIGHT_PARENTHESES	{
+									if(funcounter>0)
+										$$=make_call(tablecounter,counter, scope, yylineno, funcounter, functionoffset,"function locals",$$,reverseList($3));
+									else
+										$$=make_call(tablecounter,counter, scope, yylineno, funcounter, functionoffset,"program variables", $$,reverseList($3));					
+									fprintf(yyout," CALL ==> call(elist) \n");}
+		| lvalue callsuffix	{
+						if(funcounter>0)
+							$1=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+						else
+							$1=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+						if($2->method)
+						{
+							struct expr* t=$1;
+							if(funcounter>0)
+								$1=emit_iftableitem(member_item(t,$2->name,counter,scope,yylineno,funcounter,functionoffset,"function locals"),counter,scope,yylineno,funcounter,functionoffset,"function locals");
+							else
+								$1=emit_iftableitem(member_item(t,$2->name,counter,scope,yylineno,funcounter,functionoffset,"program variables"),counter,scope,yylineno,funcounter,functionoffset,"program variables");
+							$2->elist->next=t;
+
+						}
+						//printf("AAAAAA...%s\n",reverseList($2->elist)->sym->name);
+						if(funcounter>0)
+							$$=make_call(tablecounter,counter, scope, yylineno, funcounter, functionoffset,"function locals", $1,reverseList($2->elist));
+						else
+							$$=make_call(tablecounter,counter, scope, yylineno, funcounter, functionoffset,"program variables", $1, reverseList($2->elist));
+						
+						fprintf(yyout," call ==> ivalue callsuffix \n");} 
 		| LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
-														/*struct expr* func=newexpr(programfunc_e);
-														func->sym=$2;
-														$$=make_call(func,$5);*/
+														struct expr* func=newexpr(programfunc_e);
+														func=$2;
+														if(funcounter>0)
+															$$=make_call(tablecounter,counter, scope, yylineno, funcounter, functionoffset,"function locals", func,reverseList($5));
+														else
+															$$=make_call(tablecounter,counter, scope, yylineno, funcounter, functionoffset,"program variables", func, reverseList($5));
 														fprintf(yyout," call ==> (funcdef)(elist) \n");}
 		;
 
-callsuffix:	normcall	{fprintf(yyout," callsuffix ==> normcall \n");}
-		| methodcall	{fprintf(yyout," callsuffix ==> methodcall \n");}
+callsuffix:	normcall	{$$=$1;fprintf(yyout," callsuffix ==> normcall \n");}
+		| methodcall	{$$=$1;fprintf(yyout," callsuffix ==> methodcall \n");}
 		;
 
-normcall:	LEFT_PARENTHESES elist RIGHT_PARENTHESES {fprintf(yyout," normcall ==> (elist) \n");}
+normcall:	LEFT_PARENTHESES elist RIGHT_PARENTHESES {$$->elist=$2;$$->method=0;$$->name=NULL;fprintf(yyout," normcall ==> (elist) \n");}
 		;	
 
 methodcall:	DOUBLE_DOT id LEFT_PARENTHESES elist RIGHT_PARENTHESES{
-										/*$$->elist=$4;
+										$$->elist=$4;
 										$$->method=1;
-										$$->name=$2;*/
+										$$->name=$2;
 										fprintf(yyout," methodcall ==> ..id(elist) \n");}
 		;
 
@@ -695,6 +728,7 @@ funcdef: 	funprefix funcargs funcbody {	functionoffset[funcounter]=0;
 			 	     		funcounter--; 
 			  			infunction--;
 			  			addquad(tablecounter,funcend,$1,NULL,NULL,-1,yylineno);
+						$$=$1;
 			 			fprintf(yyout," funcdef ==> function(){} \n");
 				     	    }
 				     	    ;
