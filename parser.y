@@ -22,6 +22,7 @@
 	int numname=0;
 	int offset_arg=0;
 	int infunction=0;
+	struct expr* fun;
 %}
 
 %start program
@@ -325,7 +326,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						tablecounter++;
 						fprintf(yyout," term ==> -expr \n");}
 		| NOT expr {fprintf(yyout," term ==> !expr \n");}
-		| DOUBLE_PLUS lvalue 	{ if($2->sym!=NULL){
+		| DOUBLE_PLUS lvalue 	{ if(check_arith($2, "++lvalue")==1){
 						struct expr* tmp,*num;
 						tmp=newexpr(arithexpr_e);
 						if(funcounter>0){
@@ -333,10 +334,9 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						//tmp->numConst=$2->numConst; prepei na alaxtei ama xreiazonantai kai oi times
-						addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
+				 		addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
 						tablecounter++;
-						num=newexpr(arithexpr_e);
+						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,add,$2,$2,num,-1,yylineno);
 						tablecounter++;
@@ -344,7 +344,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
 						}
 					  fprintf(yyout," term ==> ++lvalue \n");}
-		| lvalue DOUBLE_PLUS	{ if($1->sym!=NULL){
+		| lvalue DOUBLE_PLUS	{ if(check_arith($1, "lvalue++")==1){
 						struct expr* tmp,*num;
 						tmp=newexpr(arithexpr_e);
 						if(funcounter>0){
@@ -352,10 +352,9 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						//tmp->numConst=$1->numConst; prepei na alaxtei ama xreiazonantai kai oi times
 						addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
 						tablecounter++;
-						num=newexpr(arithexpr_e);
+						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,add,$1,$1,num,-1,yylineno);
 						tablecounter++;
@@ -363,7 +362,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
 						}
 					  fprintf(yyout," term ==> lvalue++ \n");}
-		| DOUBLE_MINUS lvalue	{ if($2->sym!=NULL){
+		| DOUBLE_MINUS lvalue	{ if(check_arith($2, "--lvalue")==1){
 						struct expr* tmp,*num;
 						tmp=newexpr(arithexpr_e);
 						if(funcounter>0){
@@ -371,10 +370,9 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						//tmp->numConst=$2->numConst; prepei na alaxtei ama xreiazonantai kai oi times
 						addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
 						tablecounter++;
-						num=newexpr(arithexpr_e);
+						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,sub,$2,$2,num,-1,yylineno);
 						tablecounter++;
@@ -382,7 +380,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
 						}
 					  fprintf(yyout," term ==> --lvalue \n");}
-		| lvalue DOUBLE_MINUS	{ if($1->sym!=NULL){
+		| lvalue DOUBLE_MINUS	{ if(check_arith($1, "lvalue--")==1){
 						struct expr* tmp,*num;
 						tmp=newexpr(arithexpr_e);
 						if(funcounter>0){
@@ -390,10 +388,9 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						//tmp->numConst=$1->numConst; prepei na alaxtei ama xreiazonantai kai oi times
 						addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
 						tablecounter++;
-						num=newexpr(arithexpr_e);
+						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,sub,$1,$1,num,-1,yylineno);
 						tablecounter++;
@@ -676,17 +673,21 @@ funcdef: 	FUNCTION {
 		 	char* num=(char *)malloc(sizeof(char));
 			sprintf(name, "%s", "$f");
 			sprintf(num, "%d", numname);			
-			strcat(name,num);			
-			insertNodeToHash(Head,name,"user function",scope,yylineno, -1,"",1);
+			strcat(name,num);	
+			fun=newexpr(programfunc_e);		
+			fun->sym=insertNodeToHash(Head,name,"user function",scope,yylineno, -1,"",1);
 			funcounter++;
 			free(name);
 			free(num);
 			numname++;
-			//scope++;
+			addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
+			tablecounter++;
 		}
 		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block { functionoffset[funcounter]=0; 
 													funcounter--; 
 													infunction--;
+													addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
+													tablecounter++;
 													fprintf(yyout," funcdef ==> function(){} \n");
 													}
 		|FUNCTION id {
@@ -696,12 +697,18 @@ funcdef: 	FUNCTION {
 					fprintf(yyout,"\n\nERROR: name %s already exists in same scope in line %d\n\n",yytext,yylineno);
 				if(collisionLibFun(ScopeTable,yytext)==1)
 					fprintf(yyout,"\n\nERROR: function %s: Trying to shadow Library Function in line %d\n\n",yytext,yylineno);
-				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0)
-					insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
+				else if (tmp==NULL && collisionLibFun(ScopeTable,yytext)==0){		
+					fun=newexpr(programfunc_e);
+					fun->sym=insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
+					addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
+					tablecounter++;
+				}
 				funcounter++;
 			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block {functionoffset[funcounter]=0; 
 															funcounter--; 
 															infunction--;
+															addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
+															tablecounter++;
 															fprintf(yyout," funcdef ==> function id(){} \n");
 															}
 		;
@@ -756,10 +763,18 @@ whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
 
-returnstmt:	RETURN SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
-			fprintf(yyout," returnstmt ==> return ;\n");}
-		| RETURN expr SEMI_COLON {//counter=CreateSecretVar(counter, scope, yylineno);
-			fprintf(yyout," returnstmt ==> return expr;\n");}
+returnstmt:	RETURN SEMI_COLON {	if(funcounter==1){
+						addquad(tablecounter,Return,NULL,NULL,NULL,-1,yylineno);
+						tablecounter++;
+					}else
+						printf("\n\nreturn; is not in a function\n\n");
+					fprintf(yyout," returnstmt ==> return ;\n");}
+		| RETURN expr SEMI_COLON {	if(funcounter==1){
+							addquad(tablecounter,Return,$2,NULL,NULL,-1,yylineno);
+					 		tablecounter++;
+						}else
+							printf("\n\nreturn expr; is not in a function\n\n");
+						fprintf(yyout," returnstmt ==> return expr;\n");}
 		;
 
 %%
