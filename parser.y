@@ -562,7 +562,8 @@ call:		call LEFT_PARENTHESES elist RIGHT_PARENTHESES	{
 								$1=emit_iftableitem(member_item(t,$2->name,counter,scope,yylineno,funcounter,functionoffset,"function locals"),counter,scope,yylineno,funcounter,functionoffset,"function locals");
 							else
 								$1=emit_iftableitem(member_item(t,$2->name,counter,scope,yylineno,funcounter,functionoffset,"program variables"),counter,scope,yylineno,funcounter,functionoffset,"program variables");
-							$2->elist->next=t;
+							t->next=$2->elist;
+							$2->elist=t;
 
 						}
 						//printf("AAAAAA...%s\n",reverseList($2->elist)->sym->name);
@@ -591,6 +592,12 @@ normcall:	LEFT_PARENTHESES elist RIGHT_PARENTHESES {$$->elist=$2;$$->method=0;$$
 
 methodcall:	DOUBLE_DOT id LEFT_PARENTHESES elist RIGHT_PARENTHESES{
 										$$->elist=$4;
+										/*struct expr* tmp=$4;
+										while(tmp!=NULL)
+										{
+											printf("elist->name=%s\n",tmp->sym->name);
+											tmp=tmp->next;
+										}*/
 										$$->method=1;
 										$$->name=$2;
 										fprintf(yyout," methodcall ==> ..id(elist) \n");}
