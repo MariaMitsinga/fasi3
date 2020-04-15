@@ -156,7 +156,7 @@ expr:		assgnexpr {
 			counter++;
 			$$->numConst=$1->numConst;
 			addquad(tablecounter,assign,$$,$1,NULL,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> assgnexpr \n");
 		}
 		|expr PLUS expr {
@@ -169,7 +169,7 @@ expr:		assgnexpr {
 			//counter++;
 			$$->numConst=$1->numConst + $3->numConst;
 			addquad(tablecounter,add,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr + expr \n");
 		}
 		|expr MINUS expr {//counter=CreateSecretVar(counter, scope, yylineno);
@@ -181,7 +181,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst - $3->numConst;
 			addquad(tablecounter,sub,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr - expr \n");}	
 		|expr MULTIPLE expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			$$=newexpr(arithexpr_e);
@@ -192,7 +192,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst * $3->numConst;
 			addquad(tablecounter,mul,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr * expr \n");}
 		|expr FORWARD_SLASH expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			$$=newexpr(arithexpr_e);
@@ -203,7 +203,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst / $3->numConst;
 			addquad(tablecounter,DIV,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr / expr \n");}
 		|expr PERCENT expr {//counter=CreateSecretVar(counter, scope, yylineno);
 			$$=newexpr(arithexpr_e);
@@ -214,7 +214,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=(int)($1->numConst) % (int)($3->numConst);
 			addquad(tablecounter,mod,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr % expr \n");}
 		|expr GREATER expr { 
 			$$=newexpr(boolexpr_e);
@@ -225,7 +225,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst > $3->numConst;
 			addquad(tablecounter,if_greater,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr > expr \n");}
 		|expr GREATER_EQUAL expr { 
 			$$=newexpr(boolexpr_e);
@@ -236,7 +236,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst >= $3->numConst;
 			addquad(tablecounter,if_greatereq,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr >= expr \n");}
 		|expr LESS  expr { 
 			$$=newexpr(boolexpr_e);
@@ -247,7 +247,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst < $3->numConst;
 			addquad(tablecounter,if_less,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr < expr \n");}
 		|expr LESS_EQUAL expr { 
 			$$=newexpr(boolexpr_e);
@@ -258,7 +258,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst <= $3->numConst;
 			addquad(tablecounter,if_lesseq,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr <= expr \n");}
 		|expr DOUBLE_EQUAL expr { 
 			$$=newexpr(boolexpr_e);
@@ -272,7 +272,7 @@ expr:		assgnexpr {
 			}
 			else $$->numConst=0;
 			addquad(tablecounter,if_eq,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr == expr \n");}
 		|expr NOT_EQUAL expr { 
 			$$=newexpr(boolexpr_e);
@@ -286,7 +286,7 @@ expr:		assgnexpr {
 			}
 			else $$->numConst=0;
 			addquad(tablecounter,if_noteq,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr != expr \n");}
 		|expr AND expr { 
 			$$=newexpr(boolexpr_e);
@@ -297,7 +297,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst && $3->numConst;
 			addquad(tablecounter,and,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr && expr \n");}
 		|expr OR expr { 
 			$$=newexpr(boolexpr_e);
@@ -308,7 +308,7 @@ expr:		assgnexpr {
 			}
 			$$->numConst=$1->numConst || $3->numConst;
 			addquad(tablecounter,or,$$,$1,$3,-1,yylineno);
-			tablecounter++;
+			 
 			fprintf(yyout," expr ==> expr || expr \n");}
 		| term { fprintf(yyout," expr ==> term \n");}
 		;
@@ -323,7 +323,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							$$->sym= istempexpr($2) ? $2->sym : CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
 						addquad(tablecounter,uminus,$$,$2,NULL,-1,yylineno);
-						tablecounter++;
+						 
 						fprintf(yyout," term ==> -expr \n");}
 		| NOT expr {fprintf(yyout," term ==> !expr \n");}
 		| DOUBLE_PLUS lvalue 	{ if(check_arith($2, "++lvalue")==1){
@@ -335,11 +335,11 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
 				 		addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
-						tablecounter++;
+						 
 						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,add,$2,$2,num,-1,yylineno);
-						tablecounter++;
+						 
 					  	if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
 						}
@@ -353,11 +353,11 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
 						addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
-						tablecounter++;
+						 
 						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,add,$1,$1,num,-1,yylineno);
-						tablecounter++;
+						 
 					  	if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
 						}
@@ -371,11 +371,11 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
 						addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
-						tablecounter++;
+						 
 						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,sub,$2,$2,num,-1,yylineno);
-						tablecounter++;
+						 
 					  	if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
 						}
@@ -389,11 +389,11 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
 						addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
-						tablecounter++;
+						 
 						num=newexpr(constnum_e);
 						num->numConst=1;
 						addquad(tablecounter,sub,$1,$1,num,-1,yylineno);
-						tablecounter++;
+						 
 					  	if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
 					 		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
 						}
@@ -416,7 +416,7 @@ assgnexpr:	lvalue EQUAL expr {
 
 						addquad(tablecounter,assign,$1,$3,NULL,-1,yylineno);
 						$$=$1;
-						tablecounter++;
+						 
 					}
 					
 					if($1->sym!=NULL){
@@ -603,12 +603,12 @@ objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 									//printf("next pointer: %d\n",tmp->next->next);
 									t->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 									addquad(tablecounter,tablecreate,NULL,t,NULL,-1,yylineno);
-									tablecounter++;
+									 
 									while(tmp!=NULL)
 									{
 										//printf("auto... %d\n",tmp);
 										addquad(tablecounter,tablesetelem,t,newexpr_constnum(i),tmp,-1,yylineno);
-										tablecounter++;
+										 
 										//printf("object... %s\n",tmp->sym->name);
 										tmp=tmp->next;
 										i++;
@@ -627,12 +627,12 @@ objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 									struct expr* t=newexpr(newtable_e);
 									t->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 									addquad(tablecounter,tablecreate,NULL,t,NULL,-1,yylineno);
-									tablecounter++;
+									 
 									while(tmp!=NULL)
 									{
 										//printf("index:%.0f, value:%.0f\n",tmp->index->numConst,tmp->numConst);
 										addquad(tablecounter,tablesetelem,t,tmp->index,tmp,-1,yylineno);
-										tablecounter++;
+										 
 										tmp=tmp->next;
 									}
 									$$=t;
@@ -681,13 +681,13 @@ funcdef: 	FUNCTION {
 			free(num);
 			numname++;
 			addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
-			tablecounter++;
+			 
 		}
 		LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block { functionoffset[funcounter]=0; 
 													funcounter--; 
 													infunction--;
 													addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
-													tablecounter++;
+													 
 													fprintf(yyout," funcdef ==> function(){} \n");
 													}
 		|FUNCTION id {
@@ -701,14 +701,14 @@ funcdef: 	FUNCTION {
 					fun=newexpr(programfunc_e);
 					fun->sym=insertNodeToHash(Head,yytext,"user function",scope,yylineno, -1,"",1);
 					addquad(tablecounter,funcstart,fun,NULL,NULL,-1,yylineno);
-					tablecounter++;
+					 
 				}
 				funcounter++;
 			      } LEFT_PARENTHESES {scope++;} idlist RIGHT_PARENTHESES {offset_arg=0; scope--; infunction++;} block {functionoffset[funcounter]=0; 
 															funcounter--; 
 															infunction--;
 															addquad(tablecounter,funcend,fun,NULL,NULL,-1,yylineno);
-															tablecounter++;
+															 
 															fprintf(yyout," funcdef ==> function id(){} \n");
 															}
 		;
@@ -765,13 +765,13 @@ forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PAREN
 
 returnstmt:	RETURN SEMI_COLON {	if(funcounter==1){
 						addquad(tablecounter,Return,NULL,NULL,NULL,-1,yylineno);
-						tablecounter++;
+						 
 					}else
 						printf("\n\nreturn; is not in a function\n\n");
 					fprintf(yyout," returnstmt ==> return ;\n");}
 		| RETURN expr SEMI_COLON {	if(funcounter==1){
 							addquad(tablecounter,Return,$2,NULL,NULL,-1,yylineno);
-					 		tablecounter++;
+					 		 
 						}else
 							printf("\n\nreturn expr; is not in a function\n\n");
 						fprintf(yyout," returnstmt ==> return expr;\n");}
