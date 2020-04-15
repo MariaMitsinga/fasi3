@@ -51,6 +51,16 @@ struct quad{
 	unsigned int line;
 };
 
+struct truefalse{
+	enum iopcode op;
+	struct expr* result;
+	struct expr* arg1;
+	struct expr* arg2;
+	unsigned int label;
+	unsigned int line;
+	struct truefalse* next;
+};
+
 struct call{
 	struct expr* elist;
 	unsigned char method;
@@ -268,6 +278,35 @@ struct expr * newexpr_conststring(const char* s)
 	//printf("from quad:%s\n",e->strConst);
 	return e;	
 }
+
+struct truefalse* AddTrueFalseList(struct truefalse* arxi, enum iopcode op,struct expr* result,struct expr* arg1,struct expr* arg2,unsigned int label,unsigned int line)
+{
+	int i=0;
+	struct truefalse *curr=arxi, *prev;
+	struct truefalse *tmp =(struct truefalse*)malloc(sizeof(struct truefalse));
+
+	tmp->op=op;
+	tmp->result=result;
+	tmp->arg1=arg1;
+	tmp->arg2=arg2;
+	tmp->label=label;
+	tmp->line=line;
+	tmp->next=NULL;
+
+	if (arxi==NULL){
+		arxi=tmp;
+	}
+	else{
+		while(curr!=NULL){
+			prev=curr;
+			i++;
+			curr=curr->next;
+		}
+		prev->next=tmp;
+	}
+	return arxi;
+}
+
 
 struct expr* reverseList(struct expr* elist)
 {
