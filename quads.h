@@ -140,11 +140,9 @@ void addquad(int size,enum iopcode op,struct expr* result,struct expr* arg1,stru
 	quadtable[size]->result=result;
 	quadtable[size]->arg1=arg1;
 	quadtable[size]->arg2=arg2;
-	//if(arg2!=NULL)printf("from arg2....%s\n",arg2->sym->name);
-	//if(quadtable[size]->arg2!=NULL)printf("from quadtable[size]->arg2....%s\n",quadtable[size]->arg2->sym->name);
-	//printf("from addquad...size=%d\n",size);
 	quadtable[size]->label=label;
 	quadtable[size]->line=line;
+	tablecounter++;
 }
 
 void realloctablequad(){
