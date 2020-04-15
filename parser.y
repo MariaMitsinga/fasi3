@@ -102,6 +102,7 @@
 	double dbVal;
 	struct SymTableEntry* tmpnode;
 	struct expr* expr;
+	struct call* call;
 }
 
 %type <expr> lvalue
@@ -118,6 +119,10 @@
 %type <expr> indexedelem
 %type <expr> indexed
 %type <expr> indexed1
+
+%type <call> callsuffix
+%type <call> normcall
+%type <call> methodcall
 
 %%
 
@@ -307,18 +312,17 @@ expr:		assgnexpr {
 		| term { fprintf(yyout," expr ==> term \n");}
 		;
 
-term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) \n");}
+term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (expr) \n");}
 		| MINUS expr %prec UMINUS {
-						
+						istempexpr($2);
 						$$=newexpr(arithexpr_e);
 						if(funcounter>0){
-							$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							$$->sym= istempexpr($2) ? $2->sym : CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 						}else{
-							$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							$$->sym= istempexpr($2) ? $2->sym : CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
 						addquad(tablecounter,uminus,$$,$2,NULL,-1,yylineno);
 						tablecounter++;
-						
 						fprintf(yyout," term ==> -expr \n");}
 		| NOT expr {fprintf(yyout," term ==> !expr \n");}
 		| DOUBLE_PLUS lvalue 	{ if($2->sym!=NULL){
@@ -402,15 +406,17 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {fprintf(yyout," term ==> (expr) 
 
 assgnexpr:	lvalue EQUAL expr {	
 					if($1->type==tableitem_e){
-						
+						fprintf(yyout," bhke sto ==\n");
 						emit(tablesetelem,$1->index,$3,$1,-1,yylineno);
 						//$$=emit_iftableitem($$)
 						if(funcounter>0)
-							$$=emit_iftableitem($$,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+							$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"function locals");
 						else
-							$$=emit_iftableitem($$,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+							$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 						$$->type=assignexpr_e;
-					}else{
+					}else if($1->type!=tableitem_e){
+						fprintf(yyout," bhke sto !=\n");
+
 						addquad(tablecounter,assign,$1,$3,NULL,-1,yylineno);
 						$$=$1;
 						tablecounter++;
@@ -544,9 +550,14 @@ member:		lvalue DOT id	{
 		| call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {fprintf(yyout," Member ==> call[expr] \n");}
 		;
 
-call:		call LEFT_PARENTHESES elist RIGHT_PARENTHESES	{fprintf(yyout," CALL ==> call(elist) \n");}
+call:		call LEFT_PARENTHESES elist RIGHT_PARENTHESES	{//$$=make_call($$,$3);
+								fprintf(yyout," CALL ==> call(elist) \n");}
 		| lvalue callsuffix	{fprintf(yyout," call ==> ivalue callsuffix \n");} 
-		| LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {fprintf(yyout," call ==> (funcdef)(elist) \n");}
+		| LEFT_PARENTHESES funcdef RIGHT_PARENTHESES LEFT_PARENTHESES elist RIGHT_PARENTHESES {
+														/*struct expr* func=newexpr(programfunc_e);
+														func->sym=$2;
+														$$=make_call(func,$5);*/
+														fprintf(yyout," call ==> (funcdef)(elist) \n");}
 		;
 
 callsuffix:	normcall	{fprintf(yyout," callsuffix ==> normcall \n");}
@@ -556,7 +567,11 @@ callsuffix:	normcall	{fprintf(yyout," callsuffix ==> normcall \n");}
 normcall:	LEFT_PARENTHESES elist RIGHT_PARENTHESES {fprintf(yyout," normcall ==> (elist) \n");}
 		;	
 
-methodcall:	DOUBLE_DOT id LEFT_PARENTHESES elist RIGHT_PARENTHESES {fprintf(yyout," methodcall ==> ..id(elist) \n");}
+methodcall:	DOUBLE_DOT id LEFT_PARENTHESES elist RIGHT_PARENTHESES{
+										/*$$->elist=$4;
+										$$->method=1;
+										$$->name=$2;*/
+										fprintf(yyout," methodcall ==> ..id(elist) \n");}
 		;
 
 elist:	 	expr elist1	{
@@ -583,9 +598,10 @@ elist1:		COMMA expr elist1{
 
 objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 									int i=0;
+									//struct expr* rev,*tmp2;
 									struct expr* t=newexpr(newtable_e);
 									struct expr* tmp=$2;
-									printf("LALALALA\n");
+									//printf("LALALALA\n");
 									//printf("pointer: %d\n",tmp->next);
 									//printf("next pointer: %d\n",tmp->next->next);
 									t->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
@@ -600,6 +616,13 @@ objectdef:	LEFT_SQUARE_BRACKET elist RIGHT_SQUARE_BRACKET	{
 										tmp=tmp->next;
 										i++;
 									}
+									/*rev=reverseList($2);
+									tmp2=rev;
+									while(tmp2!=NULL)
+									{
+										printf("from reverse...%s\n",tmp2->sym->name);
+										tmp2=tmp2->next;
+									}*/
 									$$=t;
 									fprintf(yyout," objectdef ==> [elist] \n");}
 		| LEFT_SQUARE_BRACKET indexed RIGHT_SQUARE_BRACKET {
