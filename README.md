@@ -18,3 +18,4 @@
 	->dilosa tokens kai ta etreksa
 	->gia true false apothikeusa timi kais to numConst kai sto boolConst (maria)
 5) etoimo to return kai ta funcstart and funcend quads gia to function
+6) etoimo ++lvalue, lvalue++, --lvalue, lvalue-- kai to assgnexpr
