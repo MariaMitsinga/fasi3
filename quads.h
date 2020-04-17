@@ -39,7 +39,7 @@ struct expr{
 	double numConst;
 	char* strConst;
 	unsigned char boolConst;
-	struct expr* next;	
+	struct expr* next;
 	struct truefalse* truelist;
 	struct truefalse* falselist;
 };
@@ -299,8 +299,7 @@ struct truefalse* AddTrueFalseList(struct truefalse* arxi, struct quad* quadd)
 	return arxi;
 }
 
-struct truefalse* merge(struct truefalse* list1,struct truefalse* list2)
-{
+struct truefalse* merge(struct truefalse* list1,struct truefalse* list2){
 	struct truefalse* tmp=list1;
 	while(tmp->next!=NULL)	
 		tmp=tmp->next;
@@ -308,8 +307,7 @@ struct truefalse* merge(struct truefalse* list1,struct truefalse* list2)
 	return list1;
 }
 
-struct expr* reverseList(struct expr* elist)
-{
+struct expr* reverseList(struct expr* elist){
 	struct expr* reverse_elist=NULL,*tmp=elist;
 	while(tmp!=NULL)
 	{
@@ -367,7 +365,6 @@ void backpatch(struct truefalse* list,struct quad* Mlist){
 		list=list->next;
 	}
 }
-
 
 void printQuad()
 {
