@@ -39,7 +39,9 @@ struct expr{
 	double numConst;
 	char* strConst;
 	unsigned char boolConst;
-	struct expr* next;
+	struct expr* next;	
+	struct truefalse* truelist;
+	struct truefalse* falselist;
 };
 
 struct quad{
@@ -49,8 +51,6 @@ struct quad{
 	struct expr* arg2;
 	unsigned int label;
 	unsigned int line;
-	struct truefalse* truelist;
-	struct truefalse* falselist;
 };
 
 struct truefalse{
@@ -354,6 +354,18 @@ struct expr * member_item(struct expr * lv,const char*name,int counter, int scop
 	ti->index=newexpr_conststring(name);
 	//printf("from quad member :%d\n",ti);
 	return ti;
+}
+
+void backpatch(struct truefalse* list,struct quad* Mlist){
+	int i;
+	for(i=1; i<CURR_SIZE;i++){
+		if(memcmp(&quadtable[i], &Mlist, sizeof(Mlist))==0) 
+			break;
+	}
+	while(list!=NULL){
+		list->quad->label=i;
+		list=list->next;
+	}
 }
 
 
