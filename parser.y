@@ -150,20 +150,7 @@ stmt:		expr SEMI_COLON {counter=0; fprintf(yyout," stmt ==> expr; \n");}
 		|SEMI_COLON {fprintf(yyout," stmt ==> ; \n");}
 		;
 
-expr:		assgnexpr {
-			$$=newexpr(arithexpr_e);
-			if(funcounter>0){
-				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
-			}else{
-				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
-			}
-			counter++;
-			$$->numConst=$1->numConst;
-			if(flag_Array==0)
-				addquad(tablecounter,assign,$$,$1,NULL,-1,yylineno);
-			flag_Array=1;
-			fprintf(yyout," expr ==> assgnexpr \n");
-		}
+expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 		|expr PLUS expr {
 			$$=newexpr(arithexpr_e);
 			if(funcounter>0){
@@ -325,24 +312,24 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-				 		/*if ($lvalue->type == tableitem_e) {
+				 		if ($lvalue->type == tableitem_e) {
 							struct expr* val;
 							num=newexpr(constnum_e);
 							if(funcounter>0)
 								val=emit_iftableitem($2,counter,scope,yylineno,funcounter,functionoffset,"function locals");
 							else
 								val=emit_iftableitem($2,counter,scope,yylineno,funcounter,functionoffset,"program variables");
-							//$$->type=assignexpr_e;
 							num->numConst=1;
-							addquad(tablecounter,assign, val, NULL,tmp,-1,yylineno);
 							addquad(tablecounter,add, val, val, num,-1,yylineno);
 							addquad(tablecounter,tablesetelem, $2, $2->index, val,-1,yylineno);
-						}else{*/
-							addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
+							$$=val;
+						}else{
 							num=newexpr(constnum_e);
 							num->numConst=1;
 							addquad(tablecounter,add,$2,$2,num,-1,yylineno);
-						//}
+							addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
+							$$=$2;
+						}
 					  	if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
 						}
@@ -355,26 +342,54 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
-						num=newexpr(constnum_e);
-						num->numConst=1;
-						addquad(tablecounter,add,$1,$1,num,-1,yylineno);
+				 		if ($lvalue->type == tableitem_e) {
+							struct expr* val;
+							num=newexpr(constnum_e);
+							if(funcounter>0)
+								val=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+							else
+								val=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+							num->numConst=1;
+							addquad(tablecounter,assign, val, tmp,NULL,-1,yylineno);
+							addquad(tablecounter,add, val, val, num,-1,yylineno);
+							addquad(tablecounter,tablesetelem, $1, $1->index, val,-1,yylineno);
+							$$=val;
+						}else{
+							addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
+							num=newexpr(constnum_e);
+							num->numConst=1;
+							addquad(tablecounter,add,$1,$1,num,-1,yylineno);
+							$$=$1;
+						}
 					  	if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
 						}
 					  fprintf(yyout," term ==> lvalue++ \n");}
 		| DOUBLE_MINUS lvalue	{ if(check_arith($2, "--lvalue")==1){
 						struct expr* tmp,*num;
-						tmp=newexpr(arithexpr_e);
 						if(funcounter>0){
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
-						num=newexpr(constnum_e);
-						num->numConst=1;
-						addquad(tablecounter,sub,$2,$2,num,-1,yylineno);
+				 		if ($lvalue->type == tableitem_e) {
+							struct expr* val;
+							num=newexpr(constnum_e);
+							if(funcounter>0)
+								val=emit_iftableitem($2,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+							else
+								val=emit_iftableitem($2,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+							num->numConst=1;
+							addquad(tablecounter,sub, val, val, num,-1,yylineno);
+							addquad(tablecounter,tablesetelem, $2, $2->index, val,-1,yylineno);
+							$$=val;
+						}else{
+							num=newexpr(constnum_e);
+							num->numConst=1;
+							addquad(tablecounter,sub,$2,$2,num,-1,yylineno);
+							addquad(tablecounter,assign,tmp,$2,NULL,-1,yylineno);
+							$$=$2;
+						}
 					  	if(strcmp($2->sym->type,"user function")==0 || strcmp("library function", $2->sym->type)==0)
 					  		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$2->sym->name,yylineno);
 						}
@@ -387,10 +402,25 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}else{
 							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
-						num=newexpr(constnum_e);
-						num->numConst=1;
-						addquad(tablecounter,sub,$1,$1,num,-1,yylineno);
+				 		if ($lvalue->type == tableitem_e) {
+							struct expr* val;
+							num=newexpr(constnum_e);
+							if(funcounter>0)
+								val=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"function locals");
+							else
+								val=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
+							num->numConst=1;
+							addquad(tablecounter,assign, val, tmp,NULL,-1,yylineno);
+							addquad(tablecounter,sub, val, val, num,-1,yylineno);
+							addquad(tablecounter,tablesetelem, $1, $1->index, val,-1,yylineno);
+							$$=val;
+						}else{
+							addquad(tablecounter,assign,tmp,$1,NULL,-1,yylineno);
+							num=newexpr(constnum_e);
+							num->numConst=1;
+							addquad(tablecounter,sub,$1,$1,num,-1,yylineno);
+							$$=$1;
+						}
 					  	if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
 					 		fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned: %s in line: %d\n\n",$1->sym->name,yylineno);
 						}
@@ -399,6 +429,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 		;
 
 assgnexpr:	lvalue EQUAL expr {	
+					struct expr* hval;
 					if($1->type==tableitem_e){
 						flag_Array=1;
 						fprintf(yyout," bhke sto ==\n");
@@ -410,15 +441,21 @@ assgnexpr:	lvalue EQUAL expr {
 							$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 						$$->type=assignexpr_e;
 					}else if($1->type!=tableitem_e){
-						fprintf(yyout," bhke sto !=\n");
-
 						addquad(tablecounter,assign,$1,$3,NULL,-1,yylineno);
+						hval=newexpr(assignexpr_e);
+						if(funcounter>0){
+							hval->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							hval->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
 						$$=$1;
+						//$$->numConst=$1->numConst;
+						addquad(tablecounter,assign,hval,$$,NULL,-1,yylineno);	
 					}
-					
 					if($1->sym!=NULL){
-					if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
-					fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned %s in line %d\n\n",$1->sym->name,yylineno);}
+						if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
+							fprintf(yyout,"\n\nERROR: value is a function so we cannot assigned %s in line %d\n\n",$1->sym->name,yylineno);
+					}
 					fprintf(yyout," assgnexpr ==> Ivalue=expr \n");
 		};
 
