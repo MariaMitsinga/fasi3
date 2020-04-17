@@ -509,7 +509,7 @@ void printQuad()
 				break;
 			case assign:
 				if(quadtable[i]->arg1->sym==NULL)
-					printf("%d:\t %s \t %s \t\t %d \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
+					printf("%d:\t %s \t %s \t\t %g \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
 				else	
 					printf("%d:\t %s \t %s \t\t %s \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
 				break;
@@ -526,7 +526,7 @@ void printQuad()
 				if(quadtable[i]->result==NULL)
 					printf("%d:\t %s \n",i,"return");
 				else if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
-					printf("%d:\t %s \t %.0f \n",i,"return",quadtable[i]->result->numConst);
+					printf("%d:\t %s \t %g \n",i,"return",quadtable[i]->result->numConst);
 				else
 					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
 				break;
