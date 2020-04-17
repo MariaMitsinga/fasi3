@@ -52,12 +52,7 @@ struct quad{
 };
 
 struct truefalse{
-	enum iopcode op;
-	struct expr* result;
-	struct expr* arg1;
-	struct expr* arg2;
-	unsigned int label;
-	unsigned int line;
+	struct quad* quad;
 	struct truefalse* next;
 };
 
@@ -279,18 +274,13 @@ struct expr * newexpr_conststring(const char* s)
 	return e;	
 }
 
-struct truefalse* AddTrueFalseList(struct truefalse* arxi, enum iopcode op,struct expr* result,struct expr* arg1,struct expr* arg2,unsigned int label,unsigned int line)
+struct truefalse* AddTrueFalseList(struct truefalse* arxi, struct quadd)
 {
 	int i=0;
 	struct truefalse *curr=arxi, *prev;
 	struct truefalse *tmp =(struct truefalse*)malloc(sizeof(struct truefalse));
 
-	tmp->op=op;
-	tmp->result=result;
-	tmp->arg1=arg1;
-	tmp->arg2=arg2;
-	tmp->label=label;
-	tmp->line=line;
+	tmp->quad=quadd;
 	tmp->next=NULL;
 
 	if (arxi==NULL){
