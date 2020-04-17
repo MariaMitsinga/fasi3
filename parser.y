@@ -269,27 +269,30 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			else $$->numConst=0;
 			addquad(tablecounter,if_noteq,$$,$1,$3,-1,yylineno);
 			fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND expr { 
+		|expr AND M expr { 
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 			}else{
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
-			$$->numConst=$1->numConst && $3->numConst;
-			addquad(tablecounter,and,$$,$1,$3,-1,yylineno);
+			$$->numConst=$1->numConst && $4->numConst;
+			addquad(tablecounter,and,$$,$1,$4,-1,yylineno);
 			fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR expr { 
+		|expr OR M expr { 
 			$$=newexpr(boolexpr_e);
 			if(funcounter>0){
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 			}else{
 				$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 			}
-			$$->numConst=$1->numConst || $3->numConst;
-			addquad(tablecounter,or,$$,$1,$3,-1,yylineno);
+			$$->numConst=$1->numConst || $4->numConst;
+			addquad(tablecounter,or,$$,$1,$4,-1,yylineno);
 			fprintf(yyout," expr ==> expr || expr \n");}
 		| term { fprintf(yyout," expr ==> term \n");}
+		;
+
+M:		/*empty*/ {printf("ola kala\n");}
 		;
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (expr) \n");}
