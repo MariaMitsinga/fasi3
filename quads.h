@@ -274,7 +274,7 @@ struct expr * newexpr_conststring(const char* s)
 	return e;	
 }
 
-struct truefalse* AddTrueFalseList(struct truefalse* arxi, struct quadd)
+struct truefalse* AddTrueFalseList(struct truefalse* arxi, struct quad* quadd)
 {
 	int i=0;
 	struct truefalse *curr=arxi, *prev;
