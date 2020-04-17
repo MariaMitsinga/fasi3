@@ -49,6 +49,8 @@ struct quad{
 	struct expr* arg2;
 	unsigned int label;
 	unsigned int line;
+	struct truefalse* truelist;
+	struct truefalse* falselist;
 };
 
 struct truefalse{
@@ -297,6 +299,14 @@ struct truefalse* AddTrueFalseList(struct truefalse* arxi, struct quad* quadd)
 	return arxi;
 }
 
+struct truefalse* merge(struct truefalse* list1,struct truefalse* list2)
+{
+	struct truefalse* tmp=list1;
+	while(tmp->next!=NULL)	
+		tmp=tmp->next;
+	tmp->next=list2;
+	return list1;
+}
 
 struct expr* reverseList(struct expr* elist)
 {
