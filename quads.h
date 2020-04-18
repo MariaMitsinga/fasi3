@@ -299,7 +299,8 @@ struct truefalse* AddTrueFalseList(struct truefalse* arxi, struct quad* quadd)
 	return arxi;
 }
 
-struct truefalse* merge(struct truefalse* list1,struct truefalse* list2){
+struct truefalse* merge(struct truefalse* list1,struct truefalse* list2)
+{
 	struct truefalse* tmp=list1;
 	while(tmp->next!=NULL)	
 		tmp=tmp->next;
@@ -307,7 +308,8 @@ struct truefalse* merge(struct truefalse* list1,struct truefalse* list2){
 	return list1;
 }
 
-struct expr* reverseList(struct expr* elist){
+struct expr* reverseList(struct expr* elist)
+{
 	struct expr* reverse_elist=NULL,*tmp=elist;
 	while(tmp!=NULL)
 	{
@@ -354,17 +356,20 @@ struct expr * member_item(struct expr * lv,const char*name,int counter, int scop
 	return ti;
 }
 
-void backpatch(struct truefalse* list,struct quad* Mlist){
-	int i;
-	for(i=1; i<CURR_SIZE;i++){
+void backpatch(struct truefalse* list,int M){
+	//int i;
+	/*for(i=1; i<CURR_SIZE;i++){
+		printf("ok1\n");
 		if(memcmp(&quadtable[i], &Mlist, sizeof(Mlist))==0) 
 			break;
-	}
+		printf("ok2\n");
+	}*/
 	while(list!=NULL){
-		list->quad->label=i;
+		list->quad->label=M;
 		list=list->next;
 	}
 }
+
 
 void printQuad()
 {
@@ -508,10 +513,23 @@ void printQuad()
 					printf("%d:\t %s \t %s \t\t \"%s\" \t %s \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->result->index->strConst,quadtable[i]->arg2->sym->name);
 				break;
 			case assign:
-				if(quadtable[i]->arg1->sym==NULL)
-					printf("%d:\t %s \t %s \t\t %g \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
+				printf("%d:\t %s \t %s",i+1,"assign",quadtable[i]->result->sym->name);
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+						printf(" \t\t %g \n",quadtable[i]->arg1->numConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+						printf(" \t\t \"%s\" \n",quadtable[i]->arg1->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+						if(quadtable[i]->arg1->boolConst=='1')
+							printf(" \t\t 'true' \n");
+						else
+							printf(" \t\t 'false' \n");
+					}else
+						printf(" \t\t %s \n",quadtable[i]->arg1->sym->name);
+
+				/*if(quadtable[i]->arg1->sym==NULL)
+					printf("%d:\t %s \t %s \t\t %d \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
 				else	
-					printf("%d:\t %s \t %s \t\t %s \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
+					printf("%d:\t %s \t %s \t\t %s \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);*/
 				break;
 			case tablecreate:
 				printf("%d:\t %s \t %s \n",i+1,"tablecreate",quadtable[i]->arg1->sym->name);
@@ -526,7 +544,7 @@ void printQuad()
 				if(quadtable[i]->result==NULL)
 					printf("%d:\t %s \n",i,"return");
 				else if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
-					printf("%d:\t %s \t %g \n",i,"return",quadtable[i]->result->numConst);
+					printf("%d:\t %s \t %.0f \n",i,"return",quadtable[i]->result->numConst);
 				else
 					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
 				break;
@@ -549,6 +567,20 @@ void printQuad()
 				break;
 			case getretval:
 				printf("%d:\t %s \t %s \n",i+1,"getretval",quadtable[i]->result->sym->name);
+				break;
+			case if_less:
+				printf("%d:\t %s \t\t \t %s\t %s\t %d\n",i+1,"if_less",quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name,quadtable[i]->label);
+				
+
+				break;
+			case if_eq:
+				if(quadtable[i]->arg1->boolConst=='1')
+					printf("%d:\t %s \t\t \t\t %s\t %s\t %d\n",i+1,"if_eq",quadtable[i]->result->sym->name,"'true'",quadtable[i]->label);
+				else
+					printf("%d:\t %s \t\t \t\t %s\t %s\t %d\n",i+1,"if_eq",quadtable[i]->result->sym->name,"'false'",quadtable[i]->label);
+				break;
+			case jump:
+				printf("%d:\t %s \t\t \t\t \t \t %d\n",i+1,"jump",quadtable[i]->label);
 				break;
 			default:
 				printf("the end\n");
