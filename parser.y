@@ -25,8 +25,7 @@
 	int flag_Array=0;
 	int other_than_OrAnd_flag=0;
 	int logic_expr_flag=0;
-	int skigrisi=0;
-	int not_flag=0;
+	
 %}
 
 %start program
@@ -125,6 +124,7 @@
 %type <expr> indexedelem
 %type <expr> indexed
 %type <expr> indexed1
+
 %type <expr> stmt
 
 %type <strVal> funcname
@@ -146,30 +146,27 @@ stamt:		stmt stamt {fprintf(yyout," stamt ==> stmt stamt\n");}
 		| /* empty*/ {fprintf(yyout,"stamt ==> empty \n");}
 		;
 
-stmt:		expr SEMI_COLON {	counter=0;
-					if(logic_expr_flag==1)
+stmt:		expr SEMI_COLON {	
+					if($1->type==boolexpr_e)
 					{	
 						struct expr* tmp=newexpr(constbool_e);
-						struct expr* tmp2=newexpr(constbool_e);
+						struct expr* tmp2=newexpr(boolexpr_e);
+						struct expr* tmp3=newexpr(constbool_e);
 						if(funcounter>0){
 							tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
 						}else{
 							tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
 						}
-						tmp2->boolConst='1';			
-						addquad(tablecounter,assign,tmp2,tmp2,NULL,-1,yylineno);
+						tmp->boolConst='1';			
+						addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
 						backpatch($1->truelist,tablecounter-1);
 						addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
-						if(funcounter>0){
-							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
-						}else{
-							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
-						}
-						tmp->boolConst='0';
-						addquad(tablecounter,assign,tmp,tmp,NULL,-1,yylineno);
+						tmp3->boolConst='0';
+						addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
 						backpatch($1->falselist,tablecounter-1);
 						logic_expr_flag=0;
 					}
+					counter=0;
 					//other_than_OrAnd_flag=0;	
 				 	fprintf(yyout," stmt ==> expr; \n");}
 		|ifstmt	{fprintf(yyout," stmt ==> ifstmt \n");}
@@ -183,7 +180,9 @@ stmt:		expr SEMI_COLON {	counter=0;
 		|SEMI_COLON {fprintf(yyout," stmt ==> ; \n");}
 		;
 
-expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
+expr:		assgnexpr 	{
+					$$=$1;
+					fprintf(yyout," expr ==> assgnexpr \n");}
 		|expr PLUS expr {
 			$$=newexpr(arithexpr_e);
 			if(funcounter>0){
@@ -237,6 +236,7 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			addquad(tablecounter,mod,$$,$1,$3,-1,yylineno);
 			fprintf(yyout," expr ==> expr % expr \n");}
 		|expr GREATER expr { 
+			$$=newexpr(boolexpr_e);
 			logic_expr_flag=1;
 			other_than_OrAnd_flag=1;
 			struct truefalse* true=NULL,*false=NULL;
@@ -244,9 +244,10 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			$$->truelist=AddTrueFalseList(true, quadtable[tablecounter-1]);
 			addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
 			$$->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			skigrisi=1;
+
 			fprintf(yyout," expr ==> expr > expr \n");}
 		|expr GREATER_EQUAL expr { 
+			$$=newexpr(boolexpr_e);
 			logic_expr_flag=1;
 			other_than_OrAnd_flag=1;
 			struct truefalse* true=NULL,*false=NULL;
@@ -254,9 +255,10 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			$$->truelist=AddTrueFalseList(true, quadtable[tablecounter-1]);
 			addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
 			$$->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			skigrisi=1;
+
 			fprintf(yyout," expr ==> expr >= expr \n");}
 		|expr LESS expr { 
+			$$=newexpr(boolexpr_e);
 			logic_expr_flag=1;
 			other_than_OrAnd_flag=1;
 			struct truefalse* true=NULL,*false=NULL;
@@ -264,9 +266,10 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			$$->truelist=AddTrueFalseList(true, quadtable[tablecounter-1]);
 			addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
 			$$->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			skigrisi=1;
+
 			fprintf(yyout," expr ==> expr < expr \n");}
 		|expr LESS_EQUAL expr { 
+			$$=newexpr(boolexpr_e);
 			logic_expr_flag=1;
 			other_than_OrAnd_flag=1;
 			struct truefalse* true=NULL,*false=NULL;
@@ -274,41 +277,122 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			$$->truelist=AddTrueFalseList(true, quadtable[tablecounter-1]);
 			addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
 			$$->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			skigrisi=1;
+
 			fprintf(yyout," expr ==> expr <= expr \n");}
-		|expr DOUBLE_EQUAL expr { 
+		|expr DOUBLE_EQUAL {
+			if($1->type==boolexpr_e){	
+				struct expr* tmp=newexpr(constbool_e);
+				struct expr* tmp2=newexpr(boolexpr_e);
+				struct expr* tmp3=newexpr(constbool_e);
+				if(funcounter>0){
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+				}else{
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+				}
+				tmp->boolConst='1';			
+				addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+				backpatch($1->truelist,tablecounter-1);
+				addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+				tmp3->boolConst='0';
+				addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+				backpatch($1->falselist,tablecounter-1);
+				$1=tmp2;
+			}
+		}expr { 
+			if($4->type==boolexpr_e){	
+				struct expr* tmp=newexpr(constbool_e);
+				struct expr* tmp2=newexpr(boolexpr_e);
+				struct expr* tmp3=newexpr(constbool_e);
+				if(funcounter>0){
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+				}else{
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+				}
+				tmp->boolConst='1';			
+				addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+				backpatch($4->truelist,tablecounter-1);
+				addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+				tmp3->boolConst='0';
+				addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+				backpatch($4->falselist,tablecounter-1);
+				$4=tmp2;
+			}
+			$$=newexpr(boolexpr_e);
 			logic_expr_flag=1;
 			other_than_OrAnd_flag=1;
 			struct truefalse* true=NULL,*false=NULL;
-			addquad(tablecounter,if_eq,$1,$3,NULL,-1,yylineno);
+			addquad(tablecounter,if_eq,$1,$4,NULL,-1,yylineno);
 			$$->truelist=AddTrueFalseList(true, quadtable[tablecounter-1]);
 			addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
 			$$->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			skigrisi=1;
+
 			fprintf(yyout," expr ==> expr == expr \n");}
-		|expr NOT_EQUAL expr { 
+		|expr NOT_EQUAL {
+			if($1->type==boolexpr_e){	
+				struct expr* tmp=newexpr(constbool_e);
+				struct expr* tmp2=newexpr(boolexpr_e);
+				struct expr* tmp3=newexpr(constbool_e);
+				if(funcounter>0){
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+				}else{
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+				}
+				tmp->boolConst='1';			
+				addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+				backpatch($1->truelist,tablecounter-1);
+				addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+				tmp3->boolConst='0';
+				addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+				backpatch($1->falselist,tablecounter-1);
+				$1=tmp2;
+			}
+		}expr { 
+			if($4->type==boolexpr_e){	
+				struct expr* tmp=newexpr(constbool_e);
+				struct expr* tmp2=newexpr(boolexpr_e);
+				struct expr* tmp3=newexpr(constbool_e);
+				if(funcounter>0){
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+				}else{
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+				}
+				tmp->boolConst='1';			
+				addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+				backpatch($4->truelist,tablecounter-1);
+				addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+				tmp3->boolConst='0';
+				addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+				backpatch($4->falselist,tablecounter-1);
+				$4=tmp2;
+			}
+ 
+			$$=newexpr(boolexpr_e);
 			logic_expr_flag=1;
 			other_than_OrAnd_flag=1;
 			struct truefalse* true=NULL,*false=NULL;
-			addquad(tablecounter,if_noteq,$1,$3,NULL,-1,yylineno);
+			addquad(tablecounter,if_noteq,$1,$4,NULL,-1,yylineno);
 			$$->truelist=AddTrueFalseList(true, quadtable[tablecounter-1]);
 			addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
 			$$->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			skigrisi=1;
+
 			fprintf(yyout," expr ==> expr != expr \n");}
-		|expr AND{  if(other_than_OrAnd_flag==0){
-				struct expr* tmp=newexpr(boolexpr_e);
-				tmp->boolConst='1';
-				addquad(tablecounter,if_eq,$1,tmp,NULL,-1,yylineno);
-				addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
-				struct truefalse* true=NULL,*false=NULL;
-				$1->truelist=AddTrueFalseList(true, quadtable[tablecounter-2]);
-				$1->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
+		|expr AND {  	if($1->type!=boolexpr_e)
+				{
+					struct expr* tmp=newexpr(constbool_e);
+					tmp->boolConst='1';
+					addquad(tablecounter,if_eq,$1,tmp,NULL,-1,yylineno);
+					addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
+
+					struct truefalse* true=NULL,*false=NULL;
+					$1->truelist=AddTrueFalseList(true, quadtable[tablecounter-2]);
+					$1->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
+
 		        	}
-		     	}
-		 M expr { 
-			if(other_than_OrAnd_flag==0){
-				struct expr *tmp=newexpr(boolexpr_e);
+		     } M expr { 
+			$$=newexpr(boolexpr_e);
+			if($5->type!=boolexpr_e)
+			{
+				struct expr* tmp=newexpr(constbool_e);
 				tmp->boolConst='1';
 				addquad(tablecounter,if_eq,$5,tmp,NULL,-1,yylineno);
 				addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
@@ -317,25 +401,30 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 				$5->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
 			}
 			other_than_OrAnd_flag=1;
+			//printf("edwww1\n");
 			backpatch($1->truelist,$4);
+			//printf("edwww2\n");
 			$$->truelist=$5->truelist;
 			$$->falselist=merge($1->falselist,$5->falselist);
 			logic_expr_flag=1;
+			printf("tablecounter=%d\n",tablecounter);
 			fprintf(yyout," expr ==> expr && expr \n");}
-		|expr OR {  	
-				if(other_than_OrAnd_flag==0){
-					struct expr* tmp=newexpr(boolexpr_e);
+		|expr OR {  	if($1->type!=boolexpr_e)
+				{
+					struct expr* tmp=newexpr(constbool_e);
 					tmp->boolConst='1';
 					addquad(tablecounter,if_eq,$1,tmp,NULL,-1,yylineno);
 					addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
+
 					struct truefalse* true=NULL,*false=NULL;
 					$1->truelist=AddTrueFalseList(true, quadtable[tablecounter-2]);
 					$1->falselist=AddTrueFalseList(false, quadtable[tablecounter-1]);
-			    	}
-		     	}		 
-		M expr { 
-			if(other_than_OrAnd_flag==0){
-				struct expr* tmp=newexpr(boolexpr_e);
+				}
+		     	} M expr { 
+			$$=newexpr(boolexpr_e);
+			if($5->type!=boolexpr_e)
+			{
+				struct expr* tmp=newexpr(constbool_e);
 				tmp->boolConst='1';
 				addquad(tablecounter,if_eq,$5,tmp,NULL,-1,yylineno);
 				addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
@@ -349,11 +438,12 @@ expr:		assgnexpr 	{fprintf(yyout," expr ==> assgnexpr \n");}
 			$$->truelist=merge($1->truelist,$5->truelist);
 			$$->falselist=$5->falselist;
 			logic_expr_flag=1;
+			
 			fprintf(yyout," expr ==> expr || expr \n");}
 		| term { other_than_OrAnd_flag=0;fprintf(yyout," expr ==> term \n");}
 		;
 
-M:		/* empty */ {$$=tablecounter; printf("M->empty\n");}
+M:		/*empty*/ {$$=tablecounter;printf("M->empty\n");}
 		;
 
 term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (expr) \n");}
@@ -367,25 +457,25 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 						}
 						addquad(tablecounter,uminus,$$,$2,NULL,-1,yylineno);
 						fprintf(yyout," term ==> -expr \n");}
-		| NOT expr {	struct expr* tmp=newexpr(boolexpr_e);
-				struct expr* tmp2;
-				struct truefalse* t=NULL,*f=NULL;
-				tmp2=newexpr(assignexpr_e);
-				tmp->boolConst='1';
-				tmp->truelist=NULL;
-				tmp->falselist=NULL;
-				$$=tmp;
-				if (other_than_OrAnd_flag!=1){
-					addquad(tablecounter,if_eq,$2,tmp,NULL,-1,yylineno);
-					$2->truelist=AddTrueFalseList(t,quadtable[tablecounter-1]);
-					addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
-					$2->falselist=AddTrueFalseList(f,quadtable[tablecounter-1]);
-				}
-				logic_expr_flag=1;
-				$$->truelist=$2->falselist;
-				$$->falselist=$2->truelist;
-				not_flag=1;
-				fprintf(yyout," term ==> !expr \n");}
+		| NOT expr {
+			struct expr* tmp=newexpr(constbool_e);
+			struct expr* tmp2;
+			struct truefalse* t=NULL,*f=NULL;
+			tmp2=newexpr(assignexpr_e);
+			tmp->boolConst='1';
+			tmp->truelist=NULL;
+			tmp->falselist=NULL;
+			if ($2->type!=boolexpr_e){
+				addquad(tablecounter,if_eq,$2,tmp,NULL,-1,yylineno);
+				$2->truelist=AddTrueFalseList(t,quadtable[tablecounter-1]);
+				addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno);
+				$2->falselist=AddTrueFalseList(f,quadtable[tablecounter-1]);
+			}	
+			$$=newexpr(boolexpr_e);
+			logic_expr_flag=1;
+			$$->truelist=$2->falselist;
+			$$->falselist=$2->truelist;
+			fprintf(yyout," term ==> !expr \n");}
 		| DOUBLE_PLUS lvalue 	{ if(check_arith($2, "++lvalue")==1){
 						struct expr* tmp,*num;
 						tmp=newexpr(arithexpr_e);
@@ -523,16 +613,46 @@ assgnexpr:	lvalue EQUAL expr {
 							$$=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 						$$->type=assignexpr_e;
 					}else if($1->type!=tableitem_e){
-						addquad(tablecounter,assign,$1,$3,NULL,-1,yylineno);
-						hval=newexpr(assignexpr_e);
-						if(funcounter>0){
-							hval->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
-						}else{
-							hval->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+
+						if($3->type==boolexpr_e)
+						{
+							struct expr* tmp=newexpr(constbool_e);
+							struct expr* tmp2=newexpr(boolexpr_e);
+							struct expr* tmp3=newexpr(constbool_e);
+							if(funcounter>0){
+								tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
+							tmp->boolConst='1';			
+							addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+							backpatch($3->truelist,tablecounter-1);
+							addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+							tmp3->boolConst='0';
+							addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+							backpatch($3->falselist,tablecounter-1);
+							addquad(tablecounter,assign,$1,tmp2,NULL,-1,yylineno);
+							hval=newexpr(assignexpr_e);
+							if(funcounter>0){
+								hval->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								hval->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
+							$$=hval;
+							//$$->numConst=$1->numConst;
+							addquad(tablecounter,assign,hval,$$,NULL,-1,yylineno);
 						}
-						$$=$1;
-						//$$->numConst=$1->numConst;
-						addquad(tablecounter,assign,hval,$$,NULL,-1,yylineno);	
+						else{	
+							addquad(tablecounter,assign,$1,$3,NULL,-1,yylineno);
+							$$=newexpr(assignexpr_e);
+							if(funcounter>0){
+								$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								$$->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
+							//$$->numConst=$1->numConst;
+							addquad(tablecounter,assign,$$,$1,NULL,-1,yylineno);	
+						}
 					}
 					if($1->sym!=NULL){
 						if(strcmp($1->sym->type,"user function")==0 || strcmp("library function", $1->sym->type)==0)
@@ -905,6 +1025,7 @@ ifstmt:		IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt			{fprintf(yyout, " ifs
 
 whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," whilestmt==> while(expr) stmt \n");}
 		;
+
 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
