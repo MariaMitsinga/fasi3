@@ -640,7 +640,7 @@ assgnexpr:	lvalue EQUAL expr {
 							}
 							$$=hval;
 							//$$->numConst=$1->numConst;
-							addquad(tablecounter,assign,hval,$$,NULL,-1,yylineno);
+							addquad(tablecounter,assign,$$,$1,NULL,-1,yylineno);
 						}
 						else{	
 							addquad(tablecounter,assign,$1,$3,NULL,-1,yylineno);
