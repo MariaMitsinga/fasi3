@@ -370,7 +370,7 @@ void printQuad()
 	printf("quad# \t opcode \t result \t arg1 \t arg2 \t label\n");
 	printf("----------------------------------------------------------------------------\n");
 	for(i=0;i<40;i++)
-	{
+	{	
 		if(quadtable[i]==NULL)
 			continue;
 		switch(quadtable[i]->op)
