@@ -137,6 +137,9 @@
 
 %type <intVal> M
 
+%type <intVal> whilestart
+%type <intVal> whilecond
+
 %%
 
 program:	stamt {fprintf(yyout," program ==> stmt \n");}
@@ -786,10 +789,13 @@ member:		lvalue DOT id	{
 					fprintf(yyout," Member ==> lvalue.id \n");}
 		| lvalue LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET	{
 										if(funcounter>0)
-											$$=member_item($1,$3->sym->name, counter, scope, yylineno,funcounter,functionoffset,"function locals");
+											$1=emit_iftableitem($1, counter, scope, yylineno,funcounter,functionoffset,"function locals");
 										else
-											$$=member_item($1, $3->sym->name, counter, scope, yylineno,funcounter,functionoffset,"program variables");
-										fprintf(yyout," Member ==> [expr] \n");}
+											$1=emit_iftableitem($1, counter, scope, yylineno,funcounter,functionoffset,"program variables");
+										$$=newexpr(tableitem_e);
+										$$->sym=$lvalue->sym;
+										$$->index=$3;
+										fprintf(yyout," Member ==> lvalue[expr] \n");}
 		| call DOT id	{fprintf(yyout," Member ==> call.id \n");}
 		| call LEFT_SQUARE_BRACKET expr RIGHT_SQUARE_BRACKET {fprintf(yyout," Member ==> call[expr] \n");}
 		;
@@ -1034,9 +1040,53 @@ ifstmt:		IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt			{fprintf(yyout, " ifs
 		| IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt	{fprintf(yyout, " ifstmt ==> IF THEN ELSE;\n");}
 		;
 
-whilestmt :	WHILE LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt {fprintf(yyout," whilestmt==> while(expr) stmt \n");}
+whilestart:	WHILE{	$$=tablecounter;}
 		;
 
+whilecond:	LEFT_PARENTHESES expr RIGHT_PARENTHESES{
+								if($2->type==boolexpr_e)
+								{	
+									struct expr* tmp=newexpr(constbool_e);
+									struct expr* tmp2=newexpr(boolexpr_e);
+									if(funcounter>0){
+										tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+									}else{
+										tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+									}
+									tmp->boolConst='1';			
+									addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+									backpatch($2->truelist,tablecounter-1);
+									addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+									
+									struct expr* tmp3=newexpr(constbool_e);
+									tmp3->boolConst='0';
+									addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+									backpatch($2->falselist,tablecounter-1);
+									
+
+									addquad(tablecounter,if_eq,tmp2,newexpr_constbool('1'),NULL,tablecounter+2,yylineno);
+									$$=tablecounter;
+									addquad(tablecounter,jump,NULL,NULL,NULL,0,yylineno);
+									
+								}
+								else{
+
+									addquad(tablecounter,if_eq,$2,newexpr_constbool('1'),NULL,tablecounter+2,yylineno);
+									$$=tablecounter;
+									addquad(tablecounter,jump,NULL,NULL,NULL,0,yylineno);
+								}
+								//logic_expr_flag=0;
+							}
+		;
+
+
+
+whilestmt :	whilestart whilecond stmt {
+						addquad(tablecounter,jump,NULL,NULL,NULL,$1,yylineno);
+						quadtable[$2]->label=tablecounter;
+						fprintf(yyout," whilestmt==> while(expr) stmt \n");
+					  }
+		;
 
 forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
 		;
