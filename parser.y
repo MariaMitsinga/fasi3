@@ -1041,9 +1041,57 @@ idlist1:	COMMA id {
 		| /* empty */	{fprintf(yyout, " idlist ==>   \n");}
 		;
 
-ifstmt:		IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt			{fprintf(yyout, " ifstmt ==> IF THEN;\n");}
-		| IF LEFT_PARENTHESES expr RIGHT_PARENTHESES stmt ELSE stmt	{fprintf(yyout, " ifstmt ==> IF THEN ELSE;\n");}
+ifstmt:		ifprefix stmt{
+					quadtable[$1]->label=tablecounter;	//patchlabel
+					fprintf(yyout, " ifstmt ==> IF THEN;\n");}
+		| ifprefix stmt elseprefix stmt	{
+					quadtable[$1]->label=$3+1;
+					quadtable[$3]->label=tablecounter;
+					
+					fprintf(yyout, " ifstmt ==> IF THEN ELSE;\n");
+		}
 		;
+		
+elseprefix: ELSE{
+					$$=tablecounter;
+					addquad(tablecounter,jump,NULL,NULL,NULL,0,yylineno);
+			};
+		
+		
+		
+ifprefix: IF LEFT_PARENTHESES expr RIGHT_PARENTHESES{
+					struct truefalse *true=NULL, *false=NULL;
+					struct expr* tmp=newexpr(boolexpr_e);
+					struct expr* tempo=newexpr(boolexpr_e);
+					tmp->boolConst='1';	
+					backpatch($3->truelist,tablecounter);
+					backpatch($3->falselist,tablecounter+2);
+					if($3->type==boolexpr_e){
+						struct expr* tmp1=newexpr(constbool_e);
+						struct expr* tmp2=newexpr(boolexpr_e);
+						struct expr* tmp3=newexpr(constbool_e);
+						if(funcounter>0){
+							tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+						}else{
+							tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+						}
+						tmp1->boolConst='1';			
+						addquad(tablecounter,assign,tmp2,tmp1,NULL,-1,yylineno);
+						backpatch($3->truelist,tablecounter-1);
+						addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+						tmp3->boolConst='0';
+						addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+						backpatch($3->falselist,tablecounter-1);
+						addquad(tablecounter,if_eq,tmp2,newexpr_constbool('1'),NULL,tablecounter+2,yylineno);
+						$$=tablecounter;
+						addquad(tablecounter,jump,NULL,NULL,NULL,0,yylineno);
+					}
+					else{
+					addquad(tablecounter,if_eq,$3,newexpr_constbool(1),NULL,tablecounter+2,yylineno);
+					$$=tablecounter;
+					addquad(tablecounter,jump,NULL,NULL,NULL,0,yylineno);
+					}
+		};
 
 whilestart:	WHILE{	$$=tablecounter;}
 		;
