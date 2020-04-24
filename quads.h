@@ -254,6 +254,7 @@ struct expr* emit_iftableitem(struct expr* e,int counter, int scope, int yylinen
 		counter++;
 		//printf("from emit_iftableitem: %s\n",e->sym->name);
 		emit(tablegetelem,e,e->index,result,-1,yylineno);
+		printf("from emit_iftableitem: %g\n",e->index->numConst);
 		return result;
 	}
 	return NULL;
@@ -272,6 +273,14 @@ struct expr * newexpr_conststring(const char* s)
 {
 	struct expr *e = newexpr(conststring_e);
 	e->strConst = strdup(s);
+	//printf("from quad:%s\n",e->strConst);
+	return e;	
+}
+
+struct expr * newexpr_constbool(unsigned char s)
+{
+	struct expr *e = newexpr(constbool_e);
+	e->boolConst = s;
 	//printf("from quad:%s\n",e->strConst);
 	return e;	
 }
@@ -383,7 +392,19 @@ void printQuad()
 					printf("\t\t %s \n",quadtable[i]->arg1->sym->name);
 				break;
 			case tablegetelem:
-				printf("%d:\t %s \t %s \t\t %s \t \"%s\" \n",i+1,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg1->index->strConst);
+				//printf("%d:\t %s \t %s \t\t %s \t \"%s\" \n",i+1,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg1->index->strConst);
+				printf("%d:\t %s \t %s \t\t %s \t ",i+1,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
+				if(strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0)
+						printf("%g \n",quadtable[i]->arg2->numConst );
+					else if(strcmp(getExpr_t(quadtable[i]->arg2->type),"conststring_e")==0)
+						printf("\"%s\" \n",quadtable[i]->arg2->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg2->type),"constbool_e")==0){
+						if(quadtable[i]->arg2->boolConst=='1')
+							printf("'true' \n");
+						else
+							printf("'false' \n");
+					}else
+						printf("%s \n",quadtable[i]->arg2->sym->name);
 				break;
 			case add:
 				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
@@ -518,6 +539,11 @@ void printQuad()
 							printf(" \t\t 'false' \n");
 					}else
 						printf(" \t\t %s \n",quadtable[i]->arg1->sym->name);
+
+				/*if(quadtable[i]->arg1->sym==NULL)
+					printf("%d:\t %s \t %s \t\t %d \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
+				else	
+					printf("%d:\t %s \t %s \t\t %s \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);*/
 				break;
 			case tablecreate:
 				printf("%d:\t %s \t %s \n",i+1,"tablecreate",quadtable[i]->arg1->sym->name);
@@ -726,6 +752,402 @@ void printQuad()
 					else
 						printf(" 'false'\t");
 				}else 
+					printf(" %s\t",quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->label>0)
+					printf(" %d",quadtable[i]->label+1);
+				printf("\n");
+				break;
+			case jump:
+				printf("%d:\t %s \t\t \t\t \t \t %d\n",i+1,"jump",quadtable[i]->label+1);
+				break;
+			default:
+				printf("the end\n");
+		}
+	}
+
+}
+
+
+
+
+void printQuad2()
+{
+	int i=0;
+	printf("quad# \t opcode \t result \t arg1 \t arg2 \t label\n");
+	printf("----------------------------------------------------------------------------\n");
+	for(i=0;i<CURR_SIZE;i++)
+	{	
+		if(quadtable[i]==NULL)
+			continue;
+		switch(quadtable[i]->op)
+		{
+			case uminus:
+				printf("%d:\t %s \t %s ",i+1,"uminus",quadtable[i]->result->sym->name);
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+						printf("\t\t %g\n",quadtable[i]->arg1->numConst);
+				else
+					printf("\t\t %s \n",quadtable[i]->arg1->sym->name);
+				break;
+			case tablegetelem:
+				//printf("%d:\t %s \t %s \t\t %s \t \"%s\" \n",i+1,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg1->index->strConst);
+				printf("%d:\t %s \t %s \t\t %s \t ",i+1,"tablegetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);
+				if(strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0)
+						printf("%g \n",quadtable[i]->arg2->numConst );
+					else if(strcmp(getExpr_t(quadtable[i]->arg2->type),"conststring_e")==0)
+						printf("\"%s\" \n",quadtable[i]->arg2->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg2->type),"constbool_e")==0){
+						if(quadtable[i]->arg2->boolConst=='1')
+							printf("'true' \n");
+						else
+							printf("'false' \n");
+					}else
+						printf("%s \n",quadtable[i]->arg2->sym->name);
+				break;
+			case add:
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %g\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"arithexpr_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"add",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				break;
+			case sub:
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %g\t %s\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"arithexpr_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"sub",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				break;
+			case mul:
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %g\t %s\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"arithexpr_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"mul",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				break;
+			case DIV:
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %g\t %s\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"arithexpr_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"div",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				break;
+			case mod:
+				if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %g\t %g\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %g\t %s\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %g\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->numConst);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"var_e")==0 )
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				else if( strcmp(getExpr_t(quadtable[i]->arg1->type),"arithexpr_e")==0 && strcmp(getExpr_t(quadtable[i]->arg2->type),"arithexpr_e")==0 )	
+					printf("%d:\t %s \t\t %s\t\t %s\t %s\n",i+1,"mod",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name,quadtable[i]->arg2->sym->name);
+				break;
+			case tablesetelem:
+				if(quadtable[i]->result->index==NULL)
+				{	
+					//printf("lalala....%d\n",i);
+					/*if(quadtable[i]->arg2->sym!=NULL)
+						printf("%d:\t %s\t %s \t\t %.0f\t %s \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);
+					else
+						printf("%d:\t %s\t %s \t\t %.0f\t %.4f \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->numConst);
+					*/
+					printf("%d:\t %s \t %s \t\t ",i+1,"tablesetelem",quadtable[i]->result->sym->name);
+					if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+						printf("%g ",quadtable[i]->arg1->numConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+						printf(" \"%s\" ",quadtable[i]->arg1->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+						if(quadtable[i]->arg1->boolConst=='1')
+							printf("'true' ");
+						else
+							printf("'false' ");
+					}else
+						printf(" %s ",quadtable[i]->arg1->sym->name);
+						
+					if(strcmp(getExpr_t(quadtable[i]->arg2->type),"constnum_e")==0)
+						printf("\t%g \n",quadtable[i]->arg2->numConst );
+					else if(strcmp(getExpr_t(quadtable[i]->arg2->type),"conststring_e")==0)
+						printf("\t \"%s\" \n",quadtable[i]->arg2->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg2->type),"constbool_e")==0){
+						if(quadtable[i]->arg2->boolConst=='1')
+							printf("\t 'true' \n");
+						else
+							printf("\t 'false' \n");
+					}else
+						printf("\t %s \n",quadtable[i]->arg2->sym->name);
+						//printf("%d:\t %s\t %s \t\t %.0f\t%s \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst,quadtable[i]->arg2->sym->name);	
+
+
+				}
+				else	
+					printf("%d:\t %s \t %s \t\t \"%s\" \t %s \n",i+1,"tablesetelem",quadtable[i]->result->sym->name,quadtable[i]->result->index->strConst,quadtable[i]->arg2->sym->name);
+				break;
+			case assign:
+				printf("%d:\t %s \t %s",i+1,"assign",quadtable[i]->result->sym->name);
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+						printf(" \t\t %g \n",quadtable[i]->arg1->numConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+						printf(" \t\t \"%s\" \n",quadtable[i]->arg1->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+						if(quadtable[i]->arg1->boolConst=='1')
+							printf(" \t\t 'true' \n");
+						else
+							printf(" \t\t 'false' \n");
+					}else
+						printf(" \t\t %s \n",quadtable[i]->arg1->sym->name);
+
+				/*if(quadtable[i]->arg1->sym==NULL)
+					printf("%d:\t %s \t %s \t\t %d \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->numConst);
+				else	
+					printf("%d:\t %s \t %s \t\t %s \n",i+1,"assign",quadtable[i]->result->sym->name,quadtable[i]->arg1->sym->name);*/
+				break;
+			case tablecreate:
+				printf("%d:\t %s \t %s \n",i+1,"tablecreate",quadtable[i]->arg1->sym->name);
+				break;
+			case funcstart:
+				printf("%d:\t %s \t %s \n",i,"funcstart",quadtable[i]->result->sym->name);	
+				break;
+			case funcend:				
+				printf("%d:\t %s \t %s \n",i,"funcend",quadtable[i]->result->sym->name);
+				break;
+			case Return:
+				if(quadtable[i]->result==NULL)
+					printf("%d:\t %s \n",i,"return");
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf("%d:\t %s \t %g \n",i,"return",quadtable[i]->result->numConst);
+				else
+					printf("%d:\t %s \t %s \n",i,"return",quadtable[i]->result->sym->name);
+				break;
+			case param:
+				printf("%d:\t %s ",i+1,"param");
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+						printf("\t\t\t\t %g \n",quadtable[i]->arg1->numConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+						printf("\t\t\t\t \"%s\"\n",quadtable[i]->arg1->strConst);
+					else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+						if(quadtable[i]->arg1->boolConst=='1')
+							printf("\t\t\t\t 'true' \n");
+						else
+							printf("\t\t\t\t 'false' \n");
+					}else
+						printf("\t\t\t\t %s \n",quadtable[i]->arg1->sym->name);
+				break;
+			case call:
+				printf("%d:\t %s \t\t\t\t %s \n",i+1,"call",quadtable[i]->arg1->sym->name);
+				break;
+			case getretval:
+				printf("%d:\t %s \t %s \n",i+1,"getretval",quadtable[i]->result->sym->name);
+				break;
+			case if_greater:
+				printf("%d:\t %s \t\t \t",i+1,"if_greater");
+				if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->result->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->result->strConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+					if(quadtable[i]->result->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->result->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->result->sym->name);
+				
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->arg1->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->arg1->strConst);
+				else if((strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0)||(strcmp(getExpr_t(quadtable[i]->arg1->type),"boolexpr_e")==0)){
+					if(quadtable[i]->arg1->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->label>0)
+					printf(" %d",quadtable[i]->label+1);
+				printf("\n");
+				break;
+			case if_greatereq:
+				printf("%d:\t %s \t\t \t",i+1,"if_greatereq");
+				if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->result->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->result->strConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+					if(quadtable[i]->result->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->result->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->result->sym->name);
+				
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->arg1->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->arg1->strConst);
+				else if((strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0)||(strcmp(getExpr_t(quadtable[i]->arg1->type),"boolexpr_e")==0)){
+					if(quadtable[i]->arg1->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->label>0)
+					printf(" %d",quadtable[i]->label+1);
+				printf("\n");
+				break;
+			case if_less:
+				printf("%d:\t %s \t\t \t",i+1,"if_less");
+				if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->result->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->result->strConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+					if(quadtable[i]->result->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->result->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->result->sym->name);
+				
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->arg1->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->arg1->strConst);
+				else if((strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0)||(strcmp(getExpr_t(quadtable[i]->arg1->type),"boolexpr_e")==0)){
+					if(quadtable[i]->arg1->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->label>0)
+					printf(" %d",quadtable[i]->label+1);
+				printf("\n");
+				break;
+			case if_lesseq:
+				printf("%d:\t %s \t\t \t",i+1,"if_lesseq");
+				if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->result->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->result->strConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+					if(quadtable[i]->result->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->result->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->result->sym->name);
+				
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->arg1->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->arg1->strConst);
+				else if((strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0)||(strcmp(getExpr_t(quadtable[i]->arg1->type),"boolexpr_e")==0)){
+					if(quadtable[i]->arg1->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->label>0)
+					printf(" %d",quadtable[i]->label+1);
+				printf("\n");
+				break;
+			case if_eq:
+				printf("%d:\t %s \t\t \t\t",i+1,"if_eq");
+				if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->result->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->result->strConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"constbool_e")==0){
+					if(quadtable[i]->result->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else //if(strcmp(getExpr_t(quadtable[i]->result->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->result->sym->name);
+				
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->arg1->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->arg1->strConst);
+				else if((strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0)){
+					if(quadtable[i]->arg1->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else //if(strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->arg1->sym->name);
+				if(quadtable[i]->label>0)
+					printf(" %d",quadtable[i]->label+1);
+				printf("\n");
+				break;			
+			case if_noteq:
+				printf("%d:\t %s \t\t \t",i+1,"if_noteq");
+				if(strcmp(getExpr_t(quadtable[i]->result->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->result->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->result->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->result->strConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0){
+					if(quadtable[i]->result->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->result->type),"var_e")==0)
+					printf(" %s\t",quadtable[i]->result->sym->name);
+				
+				if(strcmp(getExpr_t(quadtable[i]->arg1->type),"constnum_e")==0)
+					printf(" %g\t",quadtable[i]->arg1->numConst);
+				else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"conststring_e")==0)
+					printf(" \"%s\"\t",quadtable[i]->arg1->strConst);
+				else if((strcmp(getExpr_t(quadtable[i]->arg1->type),"constbool_e")==0)||(strcmp(getExpr_t(quadtable[i]->arg1->type),"boolexpr_e")==0)){
+					if(quadtable[i]->arg1->boolConst=='1')
+						printf(" 'true'\t");
+					else
+						printf(" 'false'\t");
+				}else if(strcmp(getExpr_t(quadtable[i]->arg1->type),"var_e")==0)
 					printf(" %s\t",quadtable[i]->arg1->sym->name);
 				if(quadtable[i]->label>0)
 					printf(" %d",quadtable[i]->label+1);
