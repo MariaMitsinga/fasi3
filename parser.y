@@ -145,6 +145,10 @@
 %type <intVal> whilestart
 %type <intVal> whilecond
 
+%type <expr> ifstmt
+%type <intVal> ifprefix
+%type <intVal> elseprefix
+
 %%
 
 program:	stamt {fprintf(yyout," program ==> stmt \n");}
