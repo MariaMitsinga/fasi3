@@ -1088,8 +1088,53 @@ whilestmt :	whilestart whilecond stmt {
 					  }
 		;
 
-forstmt:	FOR LEFT_PARENTHESES elist SEMI_COLON expr SEMI_COLON elist RIGHT_PARENTHESES stmt {fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");}
+
+forprefix:	FOR LEFT_PARENTHESES elist SEMI_COLON M expr SEMI_COLON {
+				struct expr* tmp=newexpr(constbool_e);
+				struct expr* tmp2=newexpr(boolexpr_e);
+				struct expr* tmp3=newexpr(constbool_e);
+				if(funcounter>0){
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+				}else{
+					tmp2->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+				}
+				tmp->boolConst='1';			
+				addquad(tablecounter,assign,tmp2,tmp,NULL,-1,yylineno);
+				backpatch($6->truelist,tablecounter-1);
+				addquad(tablecounter,jump,NULL,NULL,NULL,tablecounter+2,yylineno);
+				tmp3->boolConst='0';
+				addquad(tablecounter,assign,tmp2,tmp3,NULL,-1,yylineno);
+				backpatch($6->falselist,tablecounter-1);
+	
+				if(funcounter>0){
+					$6->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+				}else{
+					$6->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+				}
+
+				struct forpref* tmp1= (struct forpref*)malloc(sizeof(struct forpref));
+				$$=tmp1;
+				$$->test = $5;
+				$$->enter = tablecounter;
+				addquad(tablecounter,if_eq,$6,newexpr_constbool('1'),NULL,-1,yylineno);
+				fprintf(yyout," forstmt ==> (elist;expr; \n");
+		}
 		;
+
+forstmt: 	forprefix N elist RIGHT_PARENTHESES N stmt N {
+				quadtable[$1->enter]->label=$5+1;
+				quadtable[$2]->label=tablecounter;
+				quadtable[$5]->label=$1->test;
+				quadtable[$7]->label=$2+1;
+				//patchlist($stmt.breaklist, nextquad());
+				//patchlist($stmt.contlist, $N1+1);
+				fprintf(yyout," forstmt ==> (elist;expr;elist)stmt \n");
+		}
+		;
+
+N: 		/* empty */ { $$ = tablecounter; addquad(tablecounter,jump,NULL,NULL,NULL,-1,yylineno); }
+		;
+
 
 returnstmt:	RETURN SEMI_COLON {	if(funcounter==1){
 						addquad(tablecounter,Return,NULL,NULL,NULL,-1,yylineno);
