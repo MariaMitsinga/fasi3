@@ -64,6 +64,11 @@ struct call{
 	const char* name;
 };
 
+struct forpref{
+	int test;
+	int enter;
+};
+
 
 int funcounter=0;
 int *functionoffset; 
