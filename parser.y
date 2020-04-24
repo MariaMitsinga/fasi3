@@ -479,11 +479,6 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 		| DOUBLE_PLUS lvalue 	{ if(check_arith($2, "++lvalue")==1){
 						struct expr* tmp,*num;
 						tmp=newexpr(arithexpr_e);
-						if(funcounter>0){
-							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
-						}else{
-							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
-						}
 				 		if ($lvalue->type == tableitem_e) {
 							struct expr* val;
 							num=newexpr(constnum_e);
@@ -492,10 +487,20 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							else
 								val=emit_iftableitem($2,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 							num->numConst=1;
+							if(funcounter>0){
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
 							addquad(tablecounter,add, val, val, num,-1,yylineno);
 							addquad(tablecounter,tablesetelem, $2, $2->index, val,-1,yylineno);
 							$$=val;
 						}else{
+							if(funcounter>0){
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
 							num=newexpr(constnum_e);
 							num->numConst=1;
 							addquad(tablecounter,add,$2,$2,num,-1,yylineno);
@@ -522,7 +527,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							else
 								val=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 							num->numConst=1;
-							addquad(tablecounter,assign, val, tmp,NULL,-1,yylineno);
+							addquad(tablecounter,assign, tmp, val,NULL,-1,yylineno);
 							addquad(tablecounter,add, val, val, num,-1,yylineno);
 							addquad(tablecounter,tablesetelem, $1, $1->index, val,-1,yylineno);
 							$$=val;
@@ -539,11 +544,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 					  fprintf(yyout," term ==> lvalue++ \n");}
 		| DOUBLE_MINUS lvalue	{ if(check_arith($2, "--lvalue")==1){
 						struct expr* tmp,*num;
-						if(funcounter>0){
-							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
-						}else{
-							tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
-						}
+						tmp=newexpr(arithexpr_e);
 				 		if ($lvalue->type == tableitem_e) {
 							struct expr* val;
 							num=newexpr(constnum_e);
@@ -552,10 +553,20 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							else
 								val=emit_iftableitem($2,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 							num->numConst=1;
+							if(funcounter>0){
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
 							addquad(tablecounter,sub, val, val, num,-1,yylineno);
 							addquad(tablecounter,tablesetelem, $2, $2->index, val,-1,yylineno);
 							$$=val;
 						}else{
+							if(funcounter>0){
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"function locals");
+							}else{
+								tmp->sym=CreateSecretVar(counter, scope, yylineno,funcounter,functionoffset,"program variables");
+							}
 							num=newexpr(constnum_e);
 							num->numConst=1;
 							addquad(tablecounter,sub,$2,$2,num,-1,yylineno);
@@ -582,7 +593,7 @@ term:		LEFT_PARENTHESES expr RIGHT_PARENTHESES {$$=$2;fprintf(yyout," term ==> (
 							else
 								val=emit_iftableitem($1,counter,scope,yylineno,funcounter,functionoffset,"program variables");
 							num->numConst=1;
-							addquad(tablecounter,assign, val, tmp,NULL,-1,yylineno);
+							addquad(tablecounter,assign, tmp,val ,NULL,-1,yylineno);
 							addquad(tablecounter,sub, val, val, num,-1,yylineno);
 							addquad(tablecounter,tablesetelem, $1, $1->index, val,-1,yylineno);
 							$$=val;
