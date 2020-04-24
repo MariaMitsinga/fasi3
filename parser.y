@@ -108,6 +108,7 @@
 	struct expr* expr;
 	struct call* call;
 	struct quad* quad;
+	struct forpref* forpref;
 }
 
 %type <expr> lvalue
@@ -135,7 +136,11 @@
 %type <call> normcall
 %type <call> methodcall
 
+
+%type <forpref> forprefix
+
 %type <intVal> M
+%type <intVal> N
 
 %type <intVal> whilestart
 %type <intVal> whilecond
